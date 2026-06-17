@@ -1,0 +1,17 @@
+{
+  "name": "reminecraft-bun",
+  "version": "1.0.0",
+  "description": "Bun-based scripting engine and control plane sidecar for Reminecraft",
+  "main": "src/server.ts",
+  "type": "module",
+  "scripts": {
+    "start": "bun run src/server.ts",
+    "dev": "bun --watch run src/server.ts"
+  },
+  "dependencies": {
+    "mysql2": "^3.9.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.12"
+  }
+}

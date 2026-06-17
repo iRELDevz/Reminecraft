@@ -1,0 +1,6 @@
+name: ReminecraftCore
+version: 1.0.0-SNAPSHOT
+main: org.reminecraft.core.ReminecraftCore
+api-version: '1.21'
+description: Reminecraft core server plugin
+authors: [ReMinecraft]

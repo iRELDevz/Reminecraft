@@ -1,0 +1,368 @@
+package fr.xephi.authme.process.join;
+
+import fr.xephi.authme.TestHelper;
+import fr.xephi.authme.data.ProxySessionManager;
+import fr.xephi.authme.data.auth.PlayerCache;
+import fr.xephi.authme.data.limbo.LimboService;
+import fr.xephi.authme.datasource.DataSource;
+import fr.xephi.authme.platform.DialogAdapter;
+import fr.xephi.authme.platform.DialogInputSpec;
+import fr.xephi.authme.platform.DialogWindowSpec;
+import fr.xephi.authme.process.login.AsynchronousLogin;
+import fr.xephi.authme.process.register.AsyncRegister;
+import fr.xephi.authme.service.PreJoinDialogService;
+import fr.xephi.authme.service.BukkitService;
+import fr.xephi.authme.service.CommonService;
+import fr.xephi.authme.service.PendingPremiumCache;
+import fr.xephi.authme.service.PremiumLoginVerifier;
+import fr.xephi.authme.service.PremiumService;
+import fr.xephi.authme.service.DialogStateService;
+import fr.xephi.authme.service.DialogWindowService;
+import fr.xephi.authme.service.PluginHookService;
+import fr.xephi.authme.service.ProxyLoginRequestValidator;
+import fr.xephi.authme.service.SessionService;
+import fr.xephi.authme.service.ValidationService;
+import fr.xephi.authme.service.bungeecord.BungeeSender;
+import fr.xephi.authme.settings.WelcomeMessageConfiguration;
+import fr.xephi.authme.settings.commandconfig.CommandManager;
+import fr.xephi.authme.settings.properties.HooksSettings;
+import fr.xephi.authme.settings.properties.PremiumSettings;
+import fr.xephi.authme.settings.properties.RegistrationSettings;
+import fr.xephi.authme.settings.properties.RestrictionSettings;
+import org.bukkit.entity.Player;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
+
+import java.util.UUID;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicReference;
+
+import static fr.xephi.authme.service.BukkitServiceTestHelper.setBukkitServiceToScheduleSyncTaskFromOptionallyAsyncTask;
+import static fr.xephi.authme.service.BukkitServiceTestHelper.setBukkitServiceToRunTaskLater;
+import static fr.xephi.authme.service.BukkitServiceTestHelper.setBukkitServiceToRunTaskOptionallyAsync;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+
+@ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.WARN)
+public class AsynchronousJoinTest {
+
+    @InjectMocks
+    private AsynchronousJoin asynchronousJoin;
+
+    @Mock
+    private DataSource database;
+    @Mock
+    private CommonService service;
+    @Mock
+    private LimboService limboService;
+    @Mock
+    private PluginHookService pluginHookService;
+    @Mock
+    private BukkitService bukkitService;
+    @Mock
+    private AsynchronousLogin asynchronousLogin;
+    @Mock
+    private AsyncRegister asyncRegister;
+    @Mock
+    private CommandManager commandManager;
+    @Mock
+    private ValidationService validationService;
+    @Mock
+    private WelcomeMessageConfiguration welcomeMessageConfiguration;
+    @Mock
+    private SessionService sessionService;
+    @Mock
+    private PlayerCache playerCache;
+    @Mock
+    private BungeeSender bungeeSender;
+    @Mock
+    private ProxySessionManager proxySessionManager;
+    @Mock
+    private DialogAdapter dialogAdapter;
+    @Mock
+    private DialogWindowService dialogWindowService;
+    @Mock
+    private DialogStateService dialogStateService;
+    @Mock
+    private PreJoinDialogService preJoinDialogService;
+    @Mock
+    private PremiumLoginVerifier premiumLoginVerifier;
+    @Mock
+    private PendingPremiumCache pendingPremiumCache;
+    @Mock
+    private PremiumService premiumService;
+    @Mock
+    private ProxyLoginRequestValidator proxyLoginRequestValidator;
+
+    @BeforeAll
+    public static void initLogger() {
+        TestHelper.setupLogger();
+    }
+
+    @BeforeEach
+    public void setUp() {
+        setBukkitServiceToScheduleSyncTaskFromOptionallyAsyncTask(bukkitService);
+        setBukkitServiceToRunTaskOptionallyAsync(bukkitService);
+        setBukkitServiceToRunTaskLater(bukkitService);
+        given(service.getProperty(PremiumSettings.ENABLE_PREMIUM)).willReturn(false);
+    }
+
+    @Test
+    public void shouldShowLoginDialogForUnauthenticatedRegisteredPlayer() {
+        // given
+        Player player = mockPlayer("Bobby");
+        setUpRegisteredJoin(player);
+        given(playerCache.isAuthenticated("Bobby")).willReturn(false);
+        given(service.getProperty(RegistrationSettings.USE_DIALOG_UI)).willReturn(true);
+        given(dialogAdapter.isDialogSupported()).willReturn(true);
+        given(dialogWindowService.createLoginDialog(player)).willReturn(createDialogSpec("Login", "Login"));
+
+        // when
+        asynchronousJoin.processJoin(player);
+
+        // then
+        verify(limboService).createLimboPlayer(player, true);
+        verify(bukkitService).runTaskLater(eq(player), any(Runnable.class), eq(1L));
+        verify(dialogAdapter).showLoginDialog(eq(player), any(DialogWindowSpec.class));
+    }
+
+    @Test
+    public void shouldNotShowLoginDialogForAlreadyAuthenticatedPlayer() {
+        // given — player is already authenticated when the sync limbo task fires
+        Player player = mockPlayer("Bobby");
+        setUpRegisteredJoin(player);
+        given(playerCache.isAuthenticated("Bobby")).willReturn(true);
+
+        // when
+        asynchronousJoin.processJoin(player);
+
+        // then — sync guard detects authenticated state; limbo and dialog are both skipped
+        verify(limboService, never()).createLimboPlayer(eq(player), eq(true));
+        verify(dialogAdapter, never()).showLoginDialog(eq(player), any(DialogWindowSpec.class));
+    }
+
+    @Test
+    public void shouldNotShowDelayedDialogIfPlayerGetsAuthenticatedBeforeTaskRuns() {
+        // given — player is NOT yet authenticated when the sync guard and dialog-condition run,
+        // but IS authenticated by the time the 1-tick delayed task executes.
+        // Stub sequence (all calls use "Bobby" = player.getName(), not lowercased):
+        //   call 1 → sync guard                 → false (continues to createLimboPlayer)
+        //   call 2 → !isAuthenticated() in cond  → false (condition passes, schedules delayed task)
+        //   call 3 → inside showPostJoinDialog   → true  (dialog suppressed)
+        Player player = mockPlayer("Bobby");
+        setUpRegisteredJoin(player);
+        given(player.isOnline()).willReturn(true);
+        given(playerCache.isAuthenticated("Bobby")).willReturn(false, false, true);
+        given(service.getProperty(RegistrationSettings.USE_DIALOG_UI)).willReturn(true);
+        given(dialogAdapter.isDialogSupported()).willReturn(true);
+        given(dialogWindowService.createLoginDialog(player)).willReturn(createDialogSpec("Login", "Login"));
+
+        AtomicReference<Runnable> delayedTask = new AtomicReference<>();
+        doAnswer(invocation -> {
+            delayedTask.set(invocation.getArgument(1));
+            return mock(fr.xephi.authme.service.CancellableTask.class);
+        }).when(bukkitService).runTaskLater(eq(player), any(Runnable.class), eq(1L));
+
+        // when
+        asynchronousJoin.processJoin(player);
+        delayedTask.get().run();
+
+        // then — limbo was created (player was not authenticated when guard ran),
+        // but dialog was suppressed because player became authenticated before delayed task ran
+        verify(limboService).createLimboPlayer(player, true);
+        verify(dialogAdapter, never()).showLoginDialog(eq(player), any(DialogWindowSpec.class));
+    }
+
+    @Test
+    public void shouldResumeSessionWithoutOpeningDialog() {
+        // given
+        Player player = mockPlayer("Bobby");
+        setUpRegisteredJoin(player);
+        given(sessionService.canResumeSession(player)).willReturn(true);
+
+        // when
+        asynchronousJoin.processJoin(player);
+
+        // then
+        verify(service).send(player, fr.xephi.authme.message.MessageKey.SESSION_RECONNECTION);
+        verify(commandManager).runCommandsOnSessionLogin(player);
+        verify(asynchronousLogin).forceLogin(player);
+        verify(limboService, never()).createLimboPlayer(player, true);
+        verify(dialogAdapter, never()).showLoginDialog(eq(player), any(DialogWindowSpec.class));
+    }
+
+    @Test
+    public void shouldAutoLoginFromProxySessionWithoutCreatingLimbo() {
+        // given
+        Player player = mockPlayer("Bobby");
+        setUpRegisteredJoin(player);
+        given(proxySessionManager.consumeLoginRequest("bobby"))
+            .willReturn(new ProxySessionManager.ProxyLoginRequest("bobby", null));
+        given(proxyLoginRequestValidator.validate(player, null)).willReturn(true);
+
+        // when
+        asynchronousJoin.processJoin(player);
+
+        // then - uses forceLoginFromProxy (quiet, no redirect) so a concurrent BungeeReceiver
+        // login does not cause an "already logged in" error
+        verify(service).send(player, fr.xephi.authme.message.MessageKey.SESSION_RECONNECTION);
+        verify(commandManager).runCommandsOnSessionLogin(player);
+        verify(asynchronousLogin).forceLoginFromProxy(player);
+        verify(asynchronousLogin, never()).forceLogin(player);
+        verify(limboService, never()).createLimboPlayer(player, true);
+    }
+
+    @Test
+    public void shouldAutoLoginFromProxySessionEvenIfPreJoinDialogWasCancelled() {
+        // given — proxy-authenticated player cancelled the pre-join dialog before perform.login arrived,
+        // but by the time processJoin() runs the proxy session is available; the kick must be discarded.
+        Player player = mockPlayer("Bobby");
+        setUpRegisteredJoin(player);
+        UUID playerId = UUID.randomUUID();
+        given(player.getUniqueId()).willReturn(playerId);
+        given(preJoinDialogService.consumePendingKickMessage(playerId)).willReturn("You have canceled the login.");
+        given(proxySessionManager.consumeLoginRequest("bobby"))
+            .willReturn(new ProxySessionManager.ProxyLoginRequest("bobby", null));
+        given(proxyLoginRequestValidator.validate(player, null)).willReturn(true);
+
+        // when
+        asynchronousJoin.processJoin(player);
+
+        // then — proxy auto-login wins; the dialog cancel kick is discarded
+        verify(asynchronousLogin).forceLoginFromProxy(player);
+        verify(player, never()).kickPlayer(any());
+        verify(limboService, never()).createLimboPlayer(eq(player), eq(true));
+    }
+
+    @Test
+    public void shouldProcessPendingPreJoinLoginInsteadOfShowingDialog() {
+        // given
+        Player player = mockPlayer("Bobby");
+        setUpRegisteredJoin(player);
+        java.util.UUID playerId = java.util.UUID.randomUUID();
+        given(player.getUniqueId()).willReturn(playerId);
+        given(preJoinDialogService.consumePendingLoginPassword(playerId)).willReturn("hunter2");
+        given(preJoinDialogService.consumeSkipPostJoinDialog(playerId)).willReturn(false);
+        given(playerCache.isAuthenticated("Bobby")).willReturn(false);
+
+        // when
+        asynchronousJoin.processJoin(player);
+
+        // then
+        verify(limboService).createLimboPlayer(player, true);
+        verify(asynchronousLogin).login(player, "hunter2");
+        verify(dialogAdapter, never()).showLoginDialog(eq(player), any(DialogWindowSpec.class));
+    }
+
+    @Test
+    public void shouldWaitForSignedProxyPremiumLoginWithoutFailingPendingEnrollment() {
+        // given
+        Player player = mockPlayer("Bobby");
+        setUpRegisteredJoin(player);
+        given(service.getProperty(PremiumSettings.ENABLE_PREMIUM)).willReturn(true);
+        given(bungeeSender.isEnabled()).willReturn(true);
+        UUID offlineUuid = UUID.fromString("f0647d73-8421-3979-bdb6-6b88dc3d03d4");
+        given(player.getUniqueId()).willReturn(offlineUuid);
+
+        fr.xephi.authme.data.auth.PlayerAuth auth = mock(fr.xephi.authme.data.auth.PlayerAuth.class);
+        given(database.getAuth("bobby")).willReturn(auth);
+        given(auth.isPremium()).willReturn(false);
+
+        // when
+        asynchronousJoin.processJoin(player);
+
+        // then
+        verify(pendingPremiumCache, never()).removePending("Bobby");
+        verify(bungeeSender, never()).sendPremiumUnset("Bobby");
+        verify(service, never()).send(eq(player), eq(fr.xephi.authme.message.MessageKey.PREMIUM_PENDING_FAIL));
+        verify(premiumService, never()).finalizePendingPremium(any(), any());
+        verify(limboService).createLimboPlayer(player, true);
+    }
+
+    @Test
+    public void shouldForceLoginPlayerApprovedViaPreJoinDialog() {
+        // given
+        Player player = mockPlayer("Bobby");
+        setUpRegisteredJoin(player);
+        java.util.UUID playerId = java.util.UUID.randomUUID();
+        given(player.getUniqueId()).willReturn(playerId);
+        given(preJoinDialogService.consumePendingForceLogin(playerId)).willReturn(true);
+
+        // when
+        asynchronousJoin.processJoin(player);
+
+        // then
+        verify(limboService).createLimboPlayer(player, true);
+        verify(asynchronousLogin).forceLogin(player);
+        verify(asynchronousLogin, never()).login(eq(player), any());
+        verify(dialogAdapter, never()).showLoginDialog(eq(player), any());
+    }
+
+    @Test
+    public void shouldSkipPostJoinDialogWhenPreJoinDialogWasDeferred() {
+        // given
+        Player player = mockPlayer("Bobby");
+        setUpRegisteredJoin(player);
+        java.util.UUID playerId = java.util.UUID.randomUUID();
+        given(player.getUniqueId()).willReturn(playerId);
+        given(preJoinDialogService.consumeSkipPostJoinDialog(playerId)).willReturn(true);
+        given(playerCache.isAuthenticated("Bobby")).willReturn(false);
+        given(service.getProperty(RegistrationSettings.USE_DIALOG_UI)).willReturn(true);
+        given(dialogAdapter.isDialogSupported()).willReturn(true);
+
+        // when
+        asynchronousJoin.processJoin(player);
+
+        // then
+        verify(limboService).createLimboPlayer(player, true);
+        verify(dialogAdapter, never()).showLoginDialog(eq(player), any(DialogWindowSpec.class));
+    }
+
+    private void setUpRegisteredJoin(Player player) {
+        String normalizedName = player.getName().toLowerCase();
+        given(validationService.fulfillsNameRestrictions(player)).willReturn(true);
+        given(service.getProperty(RestrictionSettings.UNRESTRICTED_NAMES)).willReturn(Set.of());
+        given(service.getProperty(RestrictionSettings.FORCE_SURVIVAL_MODE)).willReturn(false);
+        given(service.getProperty(HooksSettings.DISABLE_SOCIAL_SPY)).willReturn(false);
+        given(service.getProperty(RestrictionSettings.MAX_JOIN_PER_IP)).willReturn(0);
+        given(database.isAuthAvailable(normalizedName)).willReturn(true);
+        given(service.getProperty(RestrictionSettings.PROTECT_INVENTORY_BEFORE_LOGIN)).willReturn(false);
+        given(sessionService.canResumeSession(player)).willReturn(false);
+        given(proxySessionManager.shouldResumeSession(normalizedName)).willReturn(false);
+        given(service.getProperty(RestrictionSettings.LOGIN_TIMEOUT)).willReturn(30);
+        given(service.getProperty(RegistrationSettings.USE_DIALOG_UI)).willReturn(false);
+        given(pluginHookService.isEssentialsAvailable()).willReturn(false);
+        given(service.getProperty(RegistrationSettings.APPLY_BLIND_EFFECT)).willReturn(false);
+    }
+
+    private static Player mockPlayer(String name) {
+        Player player = mock(Player.class);
+        given(player.getName()).willReturn(name);
+        given(player.isOnline()).willReturn(true);
+        TestHelper.mockIpAddressToPlayer(player, "127.0.0.1");
+        return player;
+    }
+
+    private static DialogWindowSpec createDialogSpec(String title, String buttonLabel) {
+        return new DialogWindowSpec(title,
+            java.util.List.of(new DialogInputSpec("password", "Password", 100)),
+            buttonLabel,
+            "Cancel",
+            false,
+            false,
+            null);
+    }
+}

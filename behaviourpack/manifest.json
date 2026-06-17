@@ -1,0 +1,17 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "Reminecraft Behaviour Pack",
+    "description": "Reminecraft server behaviour extensions",
+    "uuid": "7e93a8f4-1c2d-4b56-9e7f-8a3b0c5d2e1f",
+    "version": [1, 0, 0],
+    "min_engine_version": [1, 21, 0]
+  },
+  "modules": [
+    {
+      "type": "data",
+      "uuid": "3f67d2a1-8e4b-5c9f-0d2e-1f4a6b7c8d9e",
+      "version": [1, 0, 0]
+    }
+  ]
+}

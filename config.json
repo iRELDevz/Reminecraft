@@ -1,0 +1,45 @@
+{
+  "server": {
+    "java-ip": "0.0.0.0",
+    "java-port": 25565,
+    "bedrock-ip": "0.0.0.0",
+    "bedrock-port": 19132,
+    "max-players": 100,
+    "motd": "§bReminecraft Hybrid Server §7- §aProduction Ready"
+  },
+  "database": {
+    "provider": "none",
+    "host": "localhost",
+    "port": 3306,
+    "name": "reminecraft",
+    "username": "root",
+    "password": "",
+    "pool-size": 10,
+    "connection-timeout-ms": 30000
+  },
+  "features": {
+    "enable-native-compression": true,
+    "enable-bun-scripting": true,
+    "bedrock-prefix": "."
+  },
+  "shop": {
+    "enable-shop": true,
+    "shop-items": [
+      {
+        "id": "diamond",
+        "price": 500,
+        "name": "Diamond"
+      },
+      {
+        "id": "iron_ingot",
+        "price": 100,
+        "name": "Iron Ingot"
+      },
+      {
+        "id": "gold_ingot",
+        "price": 250,
+        "name": "Gold Ingot"
+      }
+    ]
+  }
+}

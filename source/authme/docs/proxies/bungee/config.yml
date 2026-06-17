@@ -1,0 +1,51 @@
+# AUTO-GENERATED FILE! Do not edit this directly
+# File auto-generated on Wed May 13 01:10:04 CEST 2026. See authme-tools/src/test/java/tools/docs/proxies/bungee/config.tpl.yml
+#
+# Reference configuration for the native AuthMe Bungee proxy plugin.
+# The live file is created in plugins/AuthMeBungee/config.yml.
+
+# List of servers in the network where AuthMe is installed
+authServers: 
+- lobby
+# Treat every backend as an auth-aware server
+allServersAreAuthServers: false
+commands:
+    # Allows or not commands to be performed if user is not logged in
+    requireAuth: true
+    # List of commands allowed to be performed without being authenticated
+    whitelist: 
+    - /login
+    - /register
+    - /l
+    - /reg
+    - /email
+    - /captcha
+    - /2fa
+    - /totp
+    - /log
+# Allows or not user to talk in chat if they are not logged in
+chatRequiresAuth: true
+serverSwitch:
+    # Kick all players who switch servers without being authenticated
+    requiresAuth: true
+    # Message shown when an unauthenticated player is blocked from switching servers
+    kickMessage: Authentication required.
+# Enable perform.login forwarding when an authenticated player joins an auth server
+autoLogin: false
+# If enabled, logged-out users will be sent to the unloggedUserServer backend
+sendOnLogout: false
+# If sendOnLogout is enabled, logged-out users will be sent to this backend
+unloggedUserServer: ''
+# Server to redirect players to after successful authentication on an auth server.
+# Leave empty to disable proxy-side login redirect (backend handles it via BUNGEECORD_SERVER).
+loginServer: ''
+# Shared secret used to sign perform.login messages sent to backend servers.
+# Generated automatically on first start — copy this value to the Hooks.proxySharedSecret
+# setting of every backend server running AuthMe.
+proxySharedSecret: ''
+premium:
+    # Keep verified premium players on the backend offline UUID for plugin compatibility.
+    # When false, premium players keep their Mojang UUID on the backend instead.
+    # False uses Bungee's local online-mode handshake path and does not require PacketEvents.
+    keepOfflineUuidCompatibility: false
+

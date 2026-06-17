@@ -1,0 +1,56 @@
+# JDK & Maven bundled binaries
+jdk-25/
+apache-maven-3.9.16/
+
+# Build outputs
+core/target/
+source/*/target/
+source/*/build/
+source/*/.gradle/
+source/native/build/
+
+# Server runtime
+runfolder/cache/
+runfolder/libraries/
+runfolder/versions/
+runfolder/logs/
+runfolder/world/
+runfolder/world_nether/
+runfolder/world_the_end/
+runfolder/crash-reports/
+runfolder/reminecraft-server.jar
+runfolder/reminecraft_native.dll
+runfolder/hs_err_*.log
+runfolder/replay_*.log
+runfolder/usercache.json
+runfolder/banned-ips.json
+runfolder/banned-players.json
+runfolder/whitelist.json
+runfolder/ops.json
+runfolder/version_history.json
+
+# Plugin JARs (third-party, rebuilt by builder scripts)
+plugin/*.jar
+runfolder/plugins/*.jar
+runfolder/plugins/*/
+!runfolder/plugins/.gitkeep
+
+# Geyser & Floodgate runtime config
+runfolder/config/geyser/
+runfolder/config/floodgate/
+
+# Node dependencies
+source/bun/node_modules/
+node_modules/
+
+# Testing
+testingfolder/
+
+# Logs & misc
+*.log
+*.tmp
+*.class
+
+# OS
+Thumbs.db
+.DS_Store
