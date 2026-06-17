@@ -1,12 +1,128 @@
+<div align="center">
+
 # ReMinecraft
 
-Server Minecraft hybrid yang mendukung pemain **Java Edition** dan **Bedrock Edition** secara bersamaan, berbasis Purpur (Paper fork) dengan Geyser + Floodgate.
+**Hybrid Java + Bedrock Minecraft Server**
+
+[![English](#-english) · [Indonesia](#-indonesia) · [日本語](#-日本語)](#)
+
+</div>
 
 ---
 
-## Persyaratan
+## 🇬🇧 English
 
-Sebelum memulai, pastikan semua ini sudah terinstall:
+A hybrid Minecraft server supporting **Java Edition** and **Bedrock Edition** players simultaneously, built on Purpur (Paper fork) with Geyser + Floodgate.
+
+### Requirements
+
+| Requirement | Version | Notes |
+|-------------|---------|-------|
+| Java (JDK) | 21+ | Required. JDK 25 recommended at `jdk-25/` |
+| Apache Maven | 3.9+ | Bundled at `apache-maven-3.9.16/` or install manually |
+| CMake | 3.20+ | For building the C++ native DLL |
+| Visual Studio Build Tools | 2019+ | MSVC compiler for CMake (Windows) |
+| Bun | Latest | For sidecar scripting (`source/bun/`) |
+
+### First-Time Setup
+
+Follow these steps in order:
+
+**1. Get the server JAR**  
+Place `reminecraft-server.jar` (Purpur) in the root folder. Download from [purpurmc.org](https://purpurmc.org).
+
+**2. Get plugin JARs**  
+Place the following JARs in the `plugin\` folder:
+```
+plugin\AuthMe.jar
+plugin\FastLogin.jar
+plugin\floodgate-spigot.jar
+plugin\Geyser-Spigot.jar
+plugin\LuckPerms.jar
+plugin\ProtocolLib.jar
+```
+
+**3. Run setup**
+```bat
+builder\setuper.bat
+```
+
+**4. Build the core plugin**
+```bat
+builder\buildcore.bat
+```
+
+**5. (Optional) Build native DLL**
+```bat
+builder\buildnative.bat
+```
+
+**6. Start the server**
+- Development: `localhost.bat`
+- Production: `runner.bat`
+
+### Scripts
+
+| Script | Description |
+|--------|-------------|
+| `localhost.bat` | Start server for local development (ZGC, 4GB RAM) |
+| `runner.bat` | Start server for production (G1GC, optimized for many players) |
+| `builder\setuper.bat` | **Run first.** Creates all folders, copies plugins, generates default configs |
+| `builder\buildcore.bat` | Build the ReminecraftCore plugin (bossbar HUD, startup status) |
+| `builder\buildnative.bat` | Build the C++ native compression DLL (requires CMake + MSVC) |
+| `builder\buildplugin.bat` | Build third-party plugins from source (`authme`, `fastlogin`, `geyser`, `floodgate`) |
+| `builder\buildserver.bat` | Build the Purpur server JAR from source |
+
+### Bundled Plugins
+
+| Plugin | Purpose |
+|--------|---------|
+| Geyser | Bedrock ↔ Java bridge |
+| Floodgate | Auth for Bedrock players without Java accounts |
+| AuthMe | Login/register system for offline-mode servers |
+| FastLogin | Auto-login for premium players |
+| LuckPerms | Permission and group management |
+| ProtocolLib | Protocol library for other plugins |
+| ReminecraftCore | Live bossbar HUD (TPS/ping/RAM) + startup status check |
+
+### Folder Structure
+
+```
+reminecraft\
+├── localhost.bat          ← Start server (development)
+├── runner.bat             ← Start server (production)
+├── config.json            ← Main ReMinecraft config
+├── builder\               ← All build scripts
+│   ├── setuper.bat        ← First-time setup (run this first!)
+│   ├── buildcore.bat      ← Build ReminecraftCore plugin
+│   ├── buildnative.bat    ← Build C++ native DLL
+│   ├── buildplugin.bat    ← Build authme/fastlogin/geyser/floodgate
+│   └── buildserver.bat    ← Build Purpur server from source
+├── core\                  ← ReminecraftCore plugin source (Maven)
+├── plugin\                ← Place pre-built plugin JARs here
+├── runfolder\             ← Server working directory
+│   ├── plugins\           ← Active server plugins
+│   ├── config\            ← Paper configs (paper-global.yml, etc.)
+│   ├── purpur.yml
+│   ├── spigot.yml
+│   ├── bukkit.yml
+│   └── server.properties
+└── source\                ← All component source code
+    ├── authme\
+    ├── fastlogin\
+    ├── geyser\
+    ├── floodgate\
+    ├── native\            ← C++ JNI library
+    └── bun\               ← Bun/TypeScript sidecar
+```
+
+---
+
+## 🇮🇩 Indonesia
+
+Server Minecraft hybrid yang mendukung pemain **Java Edition** dan **Bedrock Edition** secara bersamaan, berbasis Purpur (Paper fork) dengan Geyser + Floodgate.
+
+### Persyaratan
 
 | Kebutuhan | Versi | Keterangan |
 |-----------|-------|------------|
@@ -16,193 +132,202 @@ Sebelum memulai, pastikan semua ini sudah terinstall:
 | Visual Studio Build Tools | 2019+ | MSVC compiler untuk CMake (Windows) |
 | Bun | Latest | Untuk sidecar scripting (`source/bun/`) |
 
----
-
-## Setup Pertama Kali
+### Setup Pertama Kali
 
 Ikuti langkah ini secara berurutan:
 
-### 1. Siapkan Server JAR
+**1. Siapkan server JAR**  
+Letakkan `reminecraft-server.jar` (Purpur) di folder root. Download dari [purpurmc.org](https://purpurmc.org).
 
-Letakkan file `reminecraft-server.jar` (Purpur) di folder root (`C:\reminecraft\`).  
-Download dari [purpurmc.org](https://purpurmc.org) sesuai versi MC yang digunakan.
-
-### 2. Siapkan Plugin JARs
-
-Letakkan file JAR plugin berikut di folder `plugin\`:
-
+**2. Siapkan plugin JARs**  
+Letakkan file berikut di folder `plugin\`:
 ```
-plugin\
-  AuthMe.jar
-  FastLogin.jar
-  floodgate-spigot.jar
-  Geyser-Spigot.jar
-  LuckPerms.jar
-  ProtocolLib.jar
+plugin\AuthMe.jar
+plugin\FastLogin.jar
+plugin\floodgate-spigot.jar
+plugin\Geyser-Spigot.jar
+plugin\LuckPerms.jar
+plugin\ProtocolLib.jar
 ```
 
-Plugin bisa di-build dari source menggunakan script di `builder\` (lihat bagian Builder di bawah), atau download manual dari release masing-masing.
-
-### 3. Jalankan Setup
-
+**3. Jalankan setup**
 ```bat
 builder\setuper.bat
 ```
 
-Script ini akan:
-- Memverifikasi Java tersedia
-- Membuat folder `runfolder\` dan subfolder yang diperlukan
-- Menyalin semua plugin dari `plugin\` ke `runfolder\plugins\`
-- Membuat `eula.txt` secara otomatis
-- Membuat `server.properties` default jika belum ada
-- Membuat `config.json` template jika belum ada
-
-### 4. Build Core Plugin
-
+**4. Build plugin core**
 ```bat
 builder\buildcore.bat
 ```
 
-Mengompilasi `ReminecraftCore` (plugin utama ReMinecraft) dan mendeploy JAR ke `runfolder\plugins\`.
-
-### 5. (Opsional) Build Native DLL
-
+**5. (Opsional) Build native DLL**
 ```bat
 builder\buildnative.bat
 ```
 
-Mengompilasi library C++ (`reminecraft_native.dll`) untuk kompresi paket menggunakan Windows Compression API (MSZIP). Butuh CMake dan MSVC.
+**6. Jalankan server**
+- Development: `localhost.bat`
+- Production: `runner.bat`
 
-### 6. Jalankan Server
+### Penjelasan Script
 
-- **Development / Localhost:** `localhost.bat`
-- **Production:** `runner.bat`
+| Script | Fungsi |
+|--------|--------|
+| `localhost.bat` | Jalankan server untuk testing lokal (ZGC, 4GB RAM) |
+| `runner.bat` | Jalankan server untuk production (G1GC, dioptimasi untuk banyak pemain) |
+| `builder\setuper.bat` | **Jalankan pertama kali.** Buat folder, salin plugin, buat config default |
+| `builder\buildcore.bat` | Build plugin ReminecraftCore (HUD bossbar, status startup) |
+| `builder\buildnative.bat` | Build C++ native DLL untuk kompresi (butuh CMake + MSVC) |
+| `builder\buildplugin.bat` | Build plugin dari source (`authme`, `fastlogin`, `geyser`, `floodgate`) |
+| `builder\buildserver.bat` | Build Purpur server JAR dari source |
 
----
+### Plugin Bawaan
 
-## Penjelasan Script
+| Plugin | Fungsi |
+|--------|--------|
+| Geyser | Bridge Bedrock ↔ Java |
+| Floodgate | Auth pemain Bedrock tanpa akun Java |
+| AuthMe | Sistem login/register untuk server offline |
+| FastLogin | Auto-login untuk pemain premium |
+| LuckPerms | Manajemen permission dan group |
+| ProtocolLib | Library protocol untuk plugin lain |
+| ReminecraftCore | HUD bossbar live (TPS/ping/RAM) + status check saat startup |
 
-### `localhost.bat`
-Menjalankan server untuk **testing di lokal**. Konfigurasi:
-- RAM: `3G–4G` dengan **ZGC** (low-latency garbage collector)
-- Flag: `-Dreminecraft.localhost=true`
-- Otomatis menyalin plugin dari `plugin\` ke `runfolder\plugins\` sebelum start
-
-Gunakan ini saat development atau mencoba fitur baru.
-
----
-
-### `runner.bat`
-Menjalankan server untuk **production/deployment**. Konfigurasi:
-- RAM: `2G–4G` dengan **G1GC** (throughput-optimized, cocok untuk banyak player)
-- JVM flags dioptimasi untuk performa: heap region size, GC tuning, dll
-- Sama seperti localhost.bat tapi lebih hemat RAM saat idle
-
-Gunakan ini saat server berjalan untuk publik.
-
----
-
-### `builder\setuper.bat`
-**Wajib dijalankan pertama kali.** Menyiapkan seluruh struktur folder dan file yang dibutuhkan server agar bisa berjalan.
-
----
-
-### `builder\buildcore.bat`
-Build plugin utama `ReminecraftCore` dari source (`core/`). Plugin ini menampilkan:
-- **Bossbar** di atas layar: TPS server, jumlah pemain, penggunaan RAM (update tiap detik)
-- **Action bar** per pemain: ping masing-masing pemain + TPS (update tiap detik)
-- **Status check** di console setelah server startup
-
----
-
-### `builder\buildnative.bat`
-Build C++ native library (`reminecraft_native.dll`) menggunakan CMake + MSVC.  
-Library ini menangani kompresi paket jaringan dengan Windows Compression API (MSZIP/deflate).  
-Butuh CMake dan Visual Studio Build Tools terinstall di sistem.
-
----
-
-### `builder\buildplugin.bat`
-Build plugin pihak ketiga dari source. Penggunaan:
-
-```bat
-builder\buildplugin.bat authme
-builder\buildplugin.bat fastlogin
-builder\buildplugin.bat floodgate
-builder\buildplugin.bat geyser
-```
-
-Hasil build otomatis di-copy ke `plugin\` dan `runfolder\plugins\`.
-
----
-
-### `builder\buildserver.bat`
-Build Purpur server JAR dari source (`source\java\`).  
-Jarang dibutuhkan kecuali ada modifikasi di server core.
-
----
-
-## Struktur Folder
+### Struktur Folder
 
 ```
 reminecraft\
 ├── localhost.bat          ← Jalankan server (development)
 ├── runner.bat             ← Jalankan server (production)
 ├── config.json            ← Konfigurasi utama ReMinecraft
-├── log4j2.xml             ← Konfigurasi logging
-│
 ├── builder\               ← Semua script build
 │   ├── setuper.bat        ← Setup pertama kali (jalankan ini dulu!)
 │   ├── buildcore.bat      ← Build plugin ReminecraftCore
 │   ├── buildnative.bat    ← Build C++ native DLL
-│   ├── buildplugin.bat    ← Build plugin authme/fastlogin/geyser/floodgate
+│   ├── buildplugin.bat    ← Build authme/fastlogin/geyser/floodgate
 │   └── buildserver.bat    ← Build Purpur server dari source
-│
 ├── core\                  ← Source code ReminecraftCore plugin (Maven)
-│
-├── plugin\                ← Pre-built JARs plugin (letakkan di sini)
-│
+├── plugin\                ← Letakkan pre-built plugin JARs di sini
 ├── runfolder\             ← Folder kerja server saat berjalan
 │   ├── plugins\           ← Plugin aktif server
-│   ├── config\            ← Config Paper (paper-global.yml, dll)
+│   ├── config\            ← Config Paper
 │   ├── purpur.yml
 │   ├── spigot.yml
 │   ├── bukkit.yml
 │   └── server.properties
-│
 └── source\                ← Source code semua komponen
-    ├── authme\            ← AuthMe plugin source
-    ├── fastlogin\         ← FastLogin plugin source
-    ├── geyser\            ← Geyser (Bedrock bridge) source
-    ├── floodgate\         ← Floodgate source
-    ├── native\            ← C++ JNI library source
-    └── bun\               ← Bun/TypeScript sidecar scripting
+    ├── authme\
+    ├── fastlogin\
+    ├── geyser\
+    ├── floodgate\
+    ├── native\            ← C++ JNI library
+    └── bun\               ← Bun/TypeScript sidecar
 ```
 
 ---
 
-## Konfigurasi Utama
+## 🇯🇵 日本語
 
-Edit `config.json` untuk mengatur:
-- IP dan port Java (`25565`) dan Bedrock (`19132`)
-- Koneksi database (MySQL)
-- Fitur native compression dan Bun scripting
+**JavaエディションとBedrockエディション**の両方のプレイヤーに対応したハイブリッドMinecraftサーバーです。Purpur（Paperフォーク）をベースに、GeyserとFloodgateを使用しています。
 
-Edit `runfolder\server.properties` untuk mengatur:
-- `max-players` — batas pemain
-- `online-mode` — `false` untuk server cracked
-- `view-distance` / `simulation-distance` — performa chunk
+### 動作要件
 
----
+| 必要環境 | バージョン | 備考 |
+|---------|-----------|------|
+| Java (JDK) | 21以上 | 必須。`jdk-25/` にJDK 25を推奨 |
+| Apache Maven | 3.9以上 | `apache-maven-3.9.16/` に同梱、または手動インストール |
+| CMake | 3.20以上 | C++ネイティブDLLのビルドに必要 |
+| Visual Studio Build Tools | 2019以上 | CMake用MSVCコンパイラ（Windows） |
+| Bun | 最新版 | サイドカースクリプト用（`source/bun/`） |
 
-## Plugin Bawaan
+### 初回セットアップ
 
-| Plugin | Fungsi |
-|--------|--------|
-| Geyser | Bridge Bedrock ↔ Java |
-| Floodgate | Auth Bedrock player tanpa akun Java |
-| AuthMe | Login/register sistem untuk server offline |
-| FastLogin | Auto-login untuk pemain premium |
-| LuckPerms | Manajemen permission/group |
-| ProtocolLib | Library protocol untuk plugin lain |
-| ReminecraftCore | HUD bossbar TPS/ping, status check startup |
+以下の手順を順番に実行してください：
+
+**1. サーバーJARを準備する**  
+`reminecraft-server.jar`（Purpur）をルートフォルダに配置します。[purpurmc.org](https://purpurmc.org) からダウンロードしてください。
+
+**2. プラグインJARを準備する**  
+以下のJARファイルを `plugin\` フォルダに配置します：
+```
+plugin\AuthMe.jar
+plugin\FastLogin.jar
+plugin\floodgate-spigot.jar
+plugin\Geyser-Spigot.jar
+plugin\LuckPerms.jar
+plugin\ProtocolLib.jar
+```
+
+**3. セットアップを実行する**
+```bat
+builder\setuper.bat
+```
+
+**4. コアプラグインをビルドする**
+```bat
+builder\buildcore.bat
+```
+
+**5. （任意）ネイティブDLLをビルドする**
+```bat
+builder\buildnative.bat
+```
+
+**6. サーバーを起動する**
+- 開発用: `localhost.bat`
+- 本番用: `runner.bat`
+
+### スクリプト説明
+
+| スクリプト | 説明 |
+|-----------|------|
+| `localhost.bat` | ローカル開発用サーバー起動（ZGC、4GB RAM） |
+| `runner.bat` | 本番用サーバー起動（G1GC、多人数向け最適化） |
+| `builder\setuper.bat` | **最初に実行。** フォルダ作成・プラグインコピー・デフォルト設定生成 |
+| `builder\buildcore.bat` | ReminecraftCoreプラグインをビルド（ボスバーHUD、起動時ステータス） |
+| `builder\buildnative.bat` | C++ネイティブ圧縮DLLをビルド（CMake + MSVC 必須） |
+| `builder\buildplugin.bat` | サードパーティプラグインをソースからビルド（`authme`, `fastlogin`, `geyser`, `floodgate`） |
+| `builder\buildserver.bat` | ソースからPurpurサーバーJARをビルド |
+
+### 同梱プラグイン
+
+| プラグイン | 機能 |
+|-----------|------|
+| Geyser | Bedrock ↔ Java ブリッジ |
+| Floodgate | Javaアカウントなしのbedrockプレイヤー認証 |
+| AuthMe | オフラインモードサーバー用ログイン/登録システム |
+| FastLogin | プレミアムプレイヤーの自動ログイン |
+| LuckPerms | 権限・グループ管理 |
+| ProtocolLib | 他プラグイン向けプロトコルライブラリ |
+| ReminecraftCore | リアルタイムボスバーHUD（TPS/ping/RAM）+ 起動時ステータスチェック |
+
+### フォルダ構成
+
+```
+reminecraft\
+├── localhost.bat          ← サーバー起動（開発用）
+├── runner.bat             ← サーバー起動（本番用）
+├── config.json            ← ReMinecraft メイン設定
+├── builder\               ← 全ビルドスクリプト
+│   ├── setuper.bat        ← 初回セットアップ（最初に実行！）
+│   ├── buildcore.bat      ← ReminecraftCoreプラグインをビルド
+│   ├── buildnative.bat    ← C++ネイティブDLLをビルド
+│   ├── buildplugin.bat    ← authme/fastlogin/geyser/floodgateをビルド
+│   └── buildserver.bat    ← ソースからPurpurサーバーをビルド
+├── core\                  ← ReminecraftCoreプラグインのソース（Maven）
+├── plugin\                ← ビルド済みプラグインJARを配置する場所
+├── runfolder\             ← サーバー動作ディレクトリ
+│   ├── plugins\           ← 有効なサーバープラグイン
+│   ├── config\            ← Paperの設定ファイル
+│   ├── purpur.yml
+│   ├── spigot.yml
+│   ├── bukkit.yml
+│   └── server.properties
+└── source\                ← 全コンポーネントのソースコード
+    ├── authme\
+    ├── fastlogin\
+    ├── geyser\
+    ├── floodgate\
+    ├── native\            ← C++ JNIライブラリ
+    └── bun\               ← Bun/TypeScriptサイドカー
+```
