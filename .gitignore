@@ -1,4 +1,4 @@
-# JDK & Maven bundled binaries
+﻿# JDK & Maven bundled binaries
 jdk-25/
 apache-maven-3.9.16/
 
@@ -54,3 +54,4 @@ testingfolder/
 # OS
 Thumbs.db
 .DS_Store
+source/java/
