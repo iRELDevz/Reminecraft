@@ -37,6 +37,11 @@ runfolder/plugins/*/
 runfolder/plugins/reminecraft-*.jar
 plugin/
 
+# Replaced by reminecraft-auth
+runfolder/plugins/AuthMe.jar
+runfolder/plugins/FastLogin.jar
+runfolder/plugins/ProtocolLib.jar
+
 # Disabled plugins
 *.jar.disabled
 

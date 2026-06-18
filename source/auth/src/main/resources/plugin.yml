@@ -1,0 +1,31 @@
+name: ReminecraftAuth
+version: 1.0.0-SNAPSHOT
+main: org.reminecraft.auth.ReminecraftAuth
+api-version: '1.21'
+description: Auth system for Reminecraft — replaces AuthMe, FastLogin, ProtocolLib
+
+commands:
+  login:
+    description: Login
+    usage: /login <password>
+    aliases: [l]
+  register:
+    description: Register
+    usage: /register <password> <confirm>
+    aliases: [reg]
+  logout:
+    description: Logout
+    usage: /logout
+  changepass:
+    description: Change password
+    usage: /changepass <old> <new> <confirm>
+    aliases: [changepassword]
+  auth:
+    description: Admin auth management
+    usage: /auth <info|reload|forcelogin|unregister> [player]
+    permission: reminecraftauth.admin
+
+permissions:
+  reminecraftauth.admin:
+    description: Admin auth management
+    default: op

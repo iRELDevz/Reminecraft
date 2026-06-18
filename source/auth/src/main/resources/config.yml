@@ -1,0 +1,8 @@
+session-hours: 12
+login-timeout-seconds: 30
+min-password-length: 5
+max-password-length: 32
+floodgate-prefix: "."
+allow-movement: false
+kick-on-wrong-password: false
+max-attempts: 5

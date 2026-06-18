@@ -93,6 +93,14 @@ for %%f in ("%ROOT%\source\perms\target\reminecraft-perms-*.jar") do (
     copy /Y "%%f" "%ROOT%\runfolder\plugins\reminecraft-perms.jar" >nul
 )
 
+echo %LOG% Build ReminecraftAuth...
+cd /d "%ROOT%\source\auth"
+call "%MVN%" package -DskipTests -q
+if %errorlevel% neq 0 ( echo %ERR% Build auth gagal. & pause & exit /b 1 )
+for %%f in ("%ROOT%\source\auth\target\reminecraft-auth-*.jar") do (
+    copy /Y "%%f" "%ROOT%\runfolder\plugins\reminecraft-auth.jar" >nul
+)
+
 REM ── 7. EULA ─────────────────────────────────────────
 echo #https://aka.ms/MinecraftEULA> "%ROOT%\runfolder\eula.txt"
 echo eula=true>> "%ROOT%\runfolder\eula.txt"
