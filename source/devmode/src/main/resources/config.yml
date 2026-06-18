@@ -1,0 +1,45 @@
+anti-bot:
+  enabled: true
+  max-joins: 5
+  window-seconds: 60
+  ban-seconds: 120
+
+motd:
+  enabled: true
+  lines:
+    - "&bReminecraft &8| &aTPS: {tps} &8| &e{online}/{max} online"
+    - "&7Hybrid Java + Bedrock &8| &fplay.reminecraft.net"
+
+chat-filter:
+  enabled: true
+  action: replace
+  replacement: "***"
+  patterns: []
+
+rate-limiter:
+  enabled: true
+  cooldowns:
+    home: 3
+    spawn: 5
+    tp: 3
+    tpa: 3
+    back: 5
+
+group-messages:
+  enabled: true
+  format:
+    join: "&7{player} &fjoined the server"
+    quit: "&7{player} &fleft the server"
+  groups:
+    owner:
+      permission: reminecraftperms.group.owner
+      join: "&4[Owner] &c{player} &4has arrived"
+      quit: "&4[Owner] &c{player} &4left"
+    mod:
+      permission: reminecraftperms.group.mod
+      join: "&9[Mod] &b{player} &9is now online"
+      quit: "&9[Mod] &b{player} &9went offline"
+    vip:
+      permission: reminecraftperms.group.vip
+      join: "&6[VIP] &e{player} &6joined!"
+      quit: "&6[VIP] &e{player} &6left."

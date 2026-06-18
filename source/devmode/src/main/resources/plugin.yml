@@ -1,0 +1,16 @@
+name: ReminecraftDevmode
+version: 1.0.0-SNAPSHOT
+main: org.reminecraft.devmode.ReminecraftDevmode
+api-version: '1.21'
+description: Anti-bot, MOTD, chat filter, rate limiter, group messages, plugin manager
+
+commands:
+  devmode:
+    description: Devmode admin commands
+    usage: /devmode <reload|plugin|filter|unban>
+    permission: reminecraftdevmode.admin
+
+permissions:
+  reminecraftdevmode.admin:
+    description: Akses penuh ke devmode
+    default: op

@@ -1,0 +1,44 @@
+package org.reminecraft.devmode;
+
+import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.EventPriority;
+import org.bukkit.event.Listener;
+import org.bukkit.event.server.ServerListPingEvent;
+
+import java.util.List;
+
+class MotdListener implements Listener {
+
+    private final ReminecraftDevmode plugin;
+
+    MotdListener(ReminecraftDevmode plugin) {
+        this.plugin = plugin;
+    }
+
+    @EventHandler(priority = EventPriority.NORMAL)
+    void onPing(ServerListPingEvent e) {
+        if (!plugin.getConfig().getBoolean("motd.enabled", true)) return;
+
+        double tps = Math.min(20.0, plugin.getServer().getTPS()[0]);
+        String tpsStr = String.format("%.1f", tps);
+        int online = plugin.getServer().getOnlinePlayers().size();
+        int max    = plugin.getServer().getMaxPlayers();
+
+        List<String> lines = plugin.getConfig().getStringList("motd.lines");
+        if (lines.isEmpty()) return;
+
+        String first  = apply(lines.get(0), tpsStr, online, max);
+        String second = lines.size() > 1 ? apply(lines.get(1), tpsStr, online, max) : "";
+
+        String raw = second.isEmpty() ? first : first + "\n" + second;
+        e.motd(LegacyComponentSerializer.legacyAmpersand().deserialize(raw));
+    }
+
+    private String apply(String line, String tps, int online, int max) {
+        return line
+            .replace("{tps}", tps)
+            .replace("{online}", String.valueOf(online))
+            .replace("{max}", String.valueOf(max));
+    }
+}

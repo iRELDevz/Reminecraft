@@ -101,6 +101,14 @@ for %%f in ("%ROOT%\source\auth\target\reminecraft-auth-*.jar") do (
     copy /Y "%%f" "%ROOT%\runfolder\plugins\reminecraft-auth.jar" >nul
 )
 
+echo %LOG% Build ReminecraftDevmode...
+cd /d "%ROOT%\source\devmode"
+call "%MVN%" package -DskipTests -q
+if %errorlevel% neq 0 ( echo %ERR% Build devmode gagal. & pause & exit /b 1 )
+for %%f in ("%ROOT%\source\devmode\target\reminecraft-devmode-*.jar") do (
+    copy /Y "%%f" "%ROOT%\runfolder\plugins\reminecraft-devmode.jar" >nul
+)
+
 REM ── 7. EULA ─────────────────────────────────────────
 echo #https://aka.ms/MinecraftEULA> "%ROOT%\runfolder\eula.txt"
 echo eula=true>> "%ROOT%\runfolder\eula.txt"
