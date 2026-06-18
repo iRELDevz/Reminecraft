@@ -25,6 +25,8 @@ rate-limiter:
     tpa: 3
     back: 5
 
+superlist: []
+
 group-messages:
   enabled: true
   format:

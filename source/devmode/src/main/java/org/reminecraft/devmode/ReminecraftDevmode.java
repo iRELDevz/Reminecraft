@@ -9,6 +9,7 @@ public class ReminecraftDevmode extends JavaPlugin {
     private ChatFilter chatFilter;
     private RateLimiter rateLimiter;
     private GroupMessages groupMessages;
+    private SuperlistManager superlist;
 
     @Override
     public void onEnable() {
@@ -18,16 +19,20 @@ public class ReminecraftDevmode extends JavaPlugin {
         chatFilter    = new ChatFilter(this);
         rateLimiter   = new RateLimiter(this);
         groupMessages = new GroupMessages(this);
+        superlist     = new SuperlistManager(this);
 
         PluginManager pm = getServer().getPluginManager();
-        if (getConfig().getBoolean("anti-bot.enabled"))      pm.registerEvents(antiBot, this);
-        if (getConfig().getBoolean("chat-filter.enabled"))   pm.registerEvents(chatFilter, this);
-        if (getConfig().getBoolean("rate-limiter.enabled"))  pm.registerEvents(rateLimiter, this);
+        if (getConfig().getBoolean("anti-bot.enabled"))       pm.registerEvents(antiBot, this);
+        if (getConfig().getBoolean("chat-filter.enabled"))    pm.registerEvents(chatFilter, this);
+        if (getConfig().getBoolean("rate-limiter.enabled"))   pm.registerEvents(rateLimiter, this);
         if (getConfig().getBoolean("group-messages.enabled")) pm.registerEvents(groupMessages, this);
         pm.registerEvents(new MotdListener(this), this);
 
-        var cmd = getCommand("devmode");
-        if (cmd != null) cmd.setExecutor(new DevmodeCommand(this, antiBot, chatFilter, rateLimiter, groupMessages));
+        var devCmd = getCommand("devmode");
+        if (devCmd != null) devCmd.setExecutor(new DevmodeCommand(this, antiBot, chatFilter, rateLimiter, groupMessages));
+
+        var slCmd = getCommand("superlist");
+        if (slCmd != null) slCmd.setExecutor(new SuperlistCommand(superlist));
 
         getLogger().info("ReminecraftDevmode enabled.");
     }
@@ -43,5 +48,6 @@ public class ReminecraftDevmode extends JavaPlugin {
         chatFilter.reload();
         rateLimiter.reload();
         groupMessages.reload();
+        superlist.load();
     }
 }

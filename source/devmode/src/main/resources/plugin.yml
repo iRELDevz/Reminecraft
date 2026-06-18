@@ -9,6 +9,9 @@ commands:
     description: Devmode admin commands
     usage: /devmode <reload|plugin|filter|unban>
     permission: reminecraftdevmode.admin
+  superlist:
+    description: Kelola superlist dan lihat semua player yang pernah join
+    usage: /superlist [add|remove <player>] [page <n>]
 
 permissions:
   reminecraftdevmode.admin:
