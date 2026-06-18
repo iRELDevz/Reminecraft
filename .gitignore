@@ -42,6 +42,14 @@ runfolder/plugins/AuthMe.jar
 runfolder/plugins/FastLogin.jar
 runfolder/plugins/ProtocolLib.jar
 
+# Third-party source repos (use pre-built JARs instead)
+source/authme/
+source/fastlogin/
+source/floodgate/
+source/geyser/
+source/java/
+source/draft/
+
 # Disabled plugins
 *.jar.disabled
 

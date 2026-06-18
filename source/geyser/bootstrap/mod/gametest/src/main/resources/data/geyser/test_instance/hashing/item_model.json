@@ -1,9 +1,0 @@
-{
-  "type": "geyser:component_hash",
-  "component": "minecraft:item_model",
-  "value": [
-    "minecraft:air",
-    "minecraft:diamond",
-    "geyser:test_barrel"
-  ]
-}
