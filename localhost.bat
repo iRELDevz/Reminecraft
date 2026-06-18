@@ -17,15 +17,9 @@ if not exist "runfolder\reminecraft-server.jar" (
 call _javadetect.bat
 if %errorlevel% neq 0 ( pause & exit /b 1 )
 
-if not exist "runfolder\plugins" mkdir "runfolder\plugins"
-for %%f in (plugin\*.jar) do (
-    copy /Y "%%f" "runfolder\plugins\" >nul
-    echo %LOG_INIT% Plugin: %%~nxf
-)
-
 (echo #https://aka.ms/MinecraftEULA & echo eula=true) > "runfolder\eula.txt"
 
-echo %LOG_JAVA% Starting localhost (4G RAM)...
+echo %LOG_JAVA% Starting localhost (2G RAM)...
 cd runfolder
-%JAVA_EXE% -Xms512M -Xmx4G -XX:+UseZGC -Dreminecraft.localhost=true -jar reminecraft-server.jar nogui
+%JAVA_EXE% -Xms256M -Xmx2G -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -XX:ReservedCodeCacheSize=64m -XX:MaxMetaspaceSize=256m -Dreminecraft.localhost=true -jar reminecraft-server.jar nogui
 cd ..
