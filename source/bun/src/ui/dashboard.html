@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ReMinecraft Dashboard</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:      #0e0e10;
+    --card:    #17171a;
+    --border:  #2a2a30;
+    --accent:  #00c896;
+    --warn:    #f5a623;
+    --danger:  #e84040;
+    --text:    #e2e2e6;
+    --muted:   #6b6b78;
+    --green:   #00c896;
+    --yellow:  #f5a623;
+    --red:     #e84040;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    min-height: 100vh;
+    padding: 24px;
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+  }
+
+  header h1 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--accent);
+  }
+
+  header h1 span { color: var(--text); }
+
+  #connection-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8rem;
+    color: var(--muted);
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 6px 14px;
+    transition: color .3s;
+  }
+
+  #connection-badge .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--muted);
+    transition: background .3s;
+  }
+
+  #connection-badge.connected { color: var(--green); }
+  #connection-badge.connected .dot { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  #connection-badge.java-down { color: var(--yellow); }
+  #connection-badge.java-down .dot { background: var(--yellow); }
+  #connection-badge.disconnected { color: var(--red); }
+  #connection-badge.disconnected .dot { background: var(--red); }
+
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  @media (max-width: 900px) { .cards { grid-template-columns: repeat(2, 1fr); } }
+  @media (max-width: 500px) { .cards { grid-template-columns: 1fr; } }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--accent);
+    border-radius: 12px 12px 0 0;
+    transition: background .4s;
+  }
+
+  .card.warn::before { background: var(--warn); }
+  .card.danger::before { background: var(--danger); }
+
+  .card-label {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  .card-value {
+    font-size: 2.4rem;
+    font-weight: 700;
+    line-height: 1;
+    transition: color .4s;
+  }
+
+  .card-sub {
+    font-size: 0.8rem;
+    color: var(--muted);
+    margin-top: 6px;
+  }
+
+  .bar-wrap {
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    margin-top: 12px;
+    overflow: hidden;
+  }
+
+  .bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    background: var(--accent);
+    transition: width .6s ease, background .4s;
+    width: 0%;
+  }
+
+  .section {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 20px;
+  }
+
+  .section-title {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+
+  canvas#chart {
+    width: 100%;
+    height: 80px;
+    display: block;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+  }
+
+  th {
+    text-align: left;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    padding: 0 0 10px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  td {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+
+  tr:last-child td { border-bottom: none; }
+
+  .ping-bar {
+    display: inline-block;
+    height: 8px;
+    border-radius: 4px;
+    width: 60px;
+    background: var(--border);
+    position: relative;
+    vertical-align: middle;
+    margin-right: 8px;
+  }
+
+  .ping-bar-fill {
+    position: absolute;
+    top: 0; left: 0; height: 100%;
+    border-radius: 4px;
+    background: var(--green);
+    transition: width .4s, background .4s;
+  }
+
+  #no-players {
+    text-align: center;
+    color: var(--muted);
+    padding: 24px 0;
+    font-size: 0.85rem;
+  }
+
+  .color-green { color: var(--green); }
+  .color-yellow { color: var(--yellow); }
+  .color-red { color: var(--red); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Remine<span>craft</span></h1>
+  <div id="connection-badge" class="disconnected">
+    <div class="dot"></div>
+    <span id="connection-label">Connecting...</span>
+  </div>
+</header>
+
+<div class="cards">
+  <div class="card" id="tps-card">
+    <div class="card-label">TPS</div>
+    <div class="card-value" id="tps-value">—</div>
+    <div class="card-sub">Target: 20.0</div>
+    <div class="bar-wrap"><div class="bar-fill" id="tps-bar"></div></div>
+  </div>
+
+  <div class="card" id="ping-card">
+    <div class="card-label">Avg Ping</div>
+    <div class="card-value" id="ping-value">—</div>
+    <div class="card-sub" id="ping-sub">ms average</div>
+    <div class="bar-wrap"><div class="bar-fill" id="ping-bar"></div></div>
+  </div>
+
+  <div class="card" id="ram-card">
+    <div class="card-label">RAM</div>
+    <div class="card-value" id="ram-value">—</div>
+    <div class="card-sub" id="ram-sub">MB used</div>
+    <div class="bar-wrap"><div class="bar-fill" id="ram-bar"></div></div>
+  </div>
+
+  <div class="card" id="players-card">
+    <div class="card-label">Players</div>
+    <div class="card-value" id="players-value">—</div>
+    <div class="card-sub" id="players-sub">online</div>
+    <div class="bar-wrap"><div class="bar-fill" id="players-bar"></div></div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">TPS History — last 60 seconds</div>
+  <canvas id="chart"></canvas>
+</div>
+
+<div class="section">
+  <div class="section-title" id="players-table-title">Players Online</div>
+  <div id="players-container">
+    <div id="no-players">No players online</div>
+  </div>
+</div>
+
+<script>
+const WS_URL = `ws://${location.host}/ui`;
+const MAX_HISTORY = 60;
+
+const $ = id => document.getElementById(id);
+let history = [];
+let reconnectTimer = null;
+let javaConnected = false;
+
+function colorForTps(tps) {
+  if (tps >= 19) return 'var(--green)';
+  if (tps >= 15) return 'var(--yellow)';
+  return 'var(--red)';
+}
+
+function colorForPing(ms) {
+  if (ms < 80)  return 'var(--green)';
+  if (ms < 150) return 'var(--yellow)';
+  return 'var(--red)';
+}
+
+function setCardState(card, level) {
+  card.classList.remove('warn', 'danger');
+  if (level === 'warn')   card.classList.add('warn');
+  if (level === 'danger') card.classList.add('danger');
+}
+
+function updateStats(stats) {
+  const tps  = stats.tps ?? 0;
+  const ping = stats.avg_ping ?? 0;
+  const ramU = stats.ram_used_mb ?? 0;
+  const ramM = stats.ram_max_mb ?? 1;
+  const onl  = stats.online ?? 0;
+  const maxP = stats.max_players ?? 0;
+
+  // TPS card
+  $('tps-value').textContent = tps.toFixed(1);
+  $('tps-value').style.color = colorForTps(tps);
+  $('tps-bar').style.width = `${Math.min(100, (tps / 20) * 100).toFixed(1)}%`;
+  $('tps-bar').style.background = colorForTps(tps);
+  setCardState($('tps-card'), tps < 15 ? 'danger' : tps < 19 ? 'warn' : '');
+
+  // Ping card
+  $('ping-value').textContent = ping + ' ms';
+  $('ping-value').style.color = colorForPing(ping);
+  $('ping-bar').style.width = `${Math.min(100, (ping / 300) * 100).toFixed(1)}%`;
+  $('ping-bar').style.background = colorForPing(ping);
+  $('ping-sub').textContent = onl > 0 ? `across ${onl} player${onl !== 1 ? 's' : ''}` : 'no players';
+  setCardState($('ping-card'), ping > 200 ? 'danger' : ping > 100 ? 'warn' : '');
+
+  // RAM card
+  const ramPct = ramM > 0 ? (ramU / ramM) * 100 : 0;
+  $('ram-value').textContent = ramU.toLocaleString();
+  $('ram-sub').textContent = `of ${ramM.toLocaleString()} MB`;
+  $('ram-bar').style.width = `${ramPct.toFixed(1)}%`;
+  $('ram-bar').style.background = ramPct > 85 ? 'var(--red)' : ramPct > 70 ? 'var(--yellow)' : 'var(--accent)';
+  setCardState($('ram-card'), ramPct > 90 ? 'danger' : ramPct > 75 ? 'warn' : '');
+
+  // Players card
+  $('players-value').textContent = onl;
+  $('players-sub').textContent = `of ${maxP} max`;
+  $('players-bar').style.width = maxP > 0 ? `${((onl / maxP) * 100).toFixed(1)}%` : '0%';
+
+  // Chart history
+  if (stats.tps_history) {
+    history = stats.tps_history;
+  } else {
+    history.push(tps);
+    if (history.length > MAX_HISTORY) history.shift();
+  }
+  drawChart();
+
+  // Player list
+  renderPlayers(stats.players ?? []);
+}
+
+function drawChart() {
+  const canvas = document.getElementById('chart');
+  const dpr = window.devicePixelRatio || 1;
+  const w = canvas.offsetWidth;
+  const h = canvas.offsetHeight;
+  canvas.width  = w * dpr;
+  canvas.height = h * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  if (history.length < 2) return;
+
+  const padL = 0, padR = 0, padT = 6, padB = 6;
+  const chartW = w - padL - padR;
+  const chartH = h - padT - padB;
+
+  // grid lines at 10, 15, 20
+  ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+  ctx.lineWidth = 1;
+  [10, 15, 20].forEach(v => {
+    const y = padT + chartH - (v / 20) * chartH;
+    ctx.beginPath();
+    ctx.moveTo(padL, y);
+    ctx.lineTo(padL + chartW, y);
+    ctx.stroke();
+  });
+
+  // gradient fill
+  const grad = ctx.createLinearGradient(0, padT, 0, padT + chartH);
+  grad.addColorStop(0, 'rgba(0,200,150,0.25)');
+  grad.addColorStop(1, 'rgba(0,200,150,0)');
+
+  const step = chartW / (MAX_HISTORY - 1);
+
+  ctx.beginPath();
+  history.forEach((v, i) => {
+    const x = padL + i * step;
+    const y = padT + chartH - Math.min(1, v / 20) * chartH;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  // close fill path
+  const last = history.length - 1;
+  ctx.lineTo(padL + last * step, padT + chartH);
+  ctx.lineTo(padL, padT + chartH);
+  ctx.closePath();
+  ctx.fillStyle = grad;
+  ctx.fill();
+
+  // line
+  ctx.beginPath();
+  history.forEach((v, i) => {
+    const x = padL + i * step;
+    const y = padT + chartH - Math.min(1, v / 20) * chartH;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  const lastTps = history[history.length - 1];
+  ctx.strokeStyle = colorForTps(lastTps);
+  ctx.lineWidth = 1.5;
+  ctx.lineJoin = 'round';
+  ctx.stroke();
+}
+
+function renderPlayers(players) {
+  const container = $('players-container');
+  $('players-table-title').textContent = `Players Online (${players.length})`;
+
+  if (!players.length) {
+    container.innerHTML = '<div id="no-players">No players online</div>';
+    return;
+  }
+
+  const rows = players.map(p => {
+    const pingPct = Math.min(100, (p.ping / 300) * 100);
+    const pingColor = colorForPing(p.ping);
+    const label = p.ping < 80 ? 'Good' : p.ping < 150 ? 'OK' : 'High';
+    return `<tr>
+      <td><strong>${escHtml(p.name)}</strong></td>
+      <td>
+        <span class="ping-bar">
+          <span class="ping-bar-fill" style="width:${pingPct.toFixed(0)}%;background:${pingColor}"></span>
+        </span>
+        <span style="color:${pingColor}">${p.ping} ms</span>
+      </td>
+      <td style="color:${pingColor}">${label}</td>
+    </tr>`;
+  }).join('');
+
+  container.innerHTML = `<table>
+    <thead><tr><th>Name</th><th>Ping</th><th>Status</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function setBadge(state, label) {
+  const badge = $('connection-badge');
+  badge.className = state;
+  $('connection-label').textContent = label;
+}
+
+function connect() {
+  clearTimeout(reconnectTimer);
+  const ws = new WebSocket(WS_URL);
+
+  ws.onopen = () => {
+    setBadge('java-down', 'Waiting for server...');
+  };
+
+  ws.onmessage = e => {
+    const msg = JSON.parse(e.data);
+
+    if (msg.type === 'init') {
+      javaConnected = false;
+      if (msg.stats?.tps > 0) {
+        javaConnected = true;
+        setBadge('connected', 'Connected');
+        updateStats({ ...msg.stats, tps_history: msg.tps_history });
+      }
+    }
+
+    if (msg.type === 'stats') {
+      javaConnected = true;
+      setBadge('connected', 'Connected');
+      updateStats(msg);
+    }
+
+    if (msg.type === 'java_connected') {
+      javaConnected = true;
+      setBadge('connected', 'Connected');
+    }
+
+    if (msg.type === 'java_disconnected') {
+      javaConnected = false;
+      setBadge('java-down', 'Server offline');
+    }
+  };
+
+  ws.onclose = () => {
+    setBadge('disconnected', 'Reconnecting...');
+    reconnectTimer = setTimeout(connect, 3000);
+  };
+
+  ws.onerror = () => ws.close();
+}
+
+window.addEventListener('resize', drawChart);
+connect();
+</script>
+</body>
+</html>

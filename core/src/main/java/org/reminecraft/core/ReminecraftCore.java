@@ -14,9 +14,19 @@ import org.bukkit.event.server.ServerLoadEvent;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.WebSocket;
+import java.util.Arrays;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.atomic.AtomicReference;
+
 public class ReminecraftCore extends JavaPlugin implements Listener {
 
     private BossBar hudBar;
+    private HttpClient httpClient;
+    private final AtomicReference<WebSocket> bridge = new AtomicReference<>();
+    private volatile boolean shuttingDown = false;
 
     @Override
     public void onEnable() {
@@ -29,34 +39,70 @@ public class ReminecraftCore extends JavaPlugin implements Listener {
 
         Bukkit.getPluginManager().registerEvents(this, this);
 
-        for (Player p : Bukkit.getOnlinePlayers()) {
-            p.showBossBar(hudBar);
-        }
+        for (Player p : Bukkit.getOnlinePlayers()) p.showBossBar(hudBar);
 
         Bukkit.getScheduler().runTaskTimer(this, this::tick, 20L, 20L);
+
+        httpClient = HttpClient.newHttpClient();
+        connectBridge();
     }
 
-    @EventHandler
-    public void onServerLoad(ServerLoadEvent event) {
-        if (event.getType() != ServerLoadEvent.LoadType.STARTUP) return;
-        Bukkit.getScheduler().runTaskLater(this, this::printStatus, 20L);
+    // ── Bun Bridge ────────────────────────────────────────────
+
+    private void connectBridge() {
+        if (shuttingDown) return;
+        Bukkit.getScheduler().runTaskAsynchronously(this, () -> {
+            try {
+                httpClient.newWebSocketBuilder()
+                    .buildAsync(URI.create("ws://localhost:25500/bridge"), new WebSocket.Listener() {
+                        @Override
+                        public void onOpen(WebSocket ws) {
+                            bridge.set(ws);
+                            ws.request(Long.MAX_VALUE);
+                            getLogger().info("Connected to Bun sidecar (dashboard live).");
+                        }
+
+                        @Override
+                        public CompletionStage<?> onText(WebSocket ws, CharSequence data, boolean last) {
+                            return null;
+                        }
+
+                        @Override
+                        public CompletionStage<?> onClose(WebSocket ws, int code, String reason) {
+                            bridge.set(null);
+                            if (!shuttingDown) {
+                                getLogger().info("Bun sidecar disconnected. Retrying in 5s...");
+                                try { Thread.sleep(5000); } catch (InterruptedException ignored) {}
+                                connectBridge();
+                            }
+                            return null;
+                        }
+
+                        @Override
+                        public void onError(WebSocket ws, Throwable err) {
+                            bridge.set(null);
+                            if (!shuttingDown) {
+                                try { Thread.sleep(5000); } catch (InterruptedException ignored) {}
+                                connectBridge();
+                            }
+                        }
+                    }).get();
+            } catch (Exception ignored) {}
+        });
     }
 
-    @EventHandler
-    public void onJoin(PlayerJoinEvent event) {
-        event.getPlayer().showBossBar(hudBar);
+    private void sendToBun(String json) {
+        WebSocket ws = bridge.get();
+        if (ws == null || ws.isOutputClosed()) return;
+        try { ws.sendText(json, true); } catch (Exception ignored) {}
     }
 
-    @EventHandler
-    public void onQuit(PlayerQuitEvent event) {
-        event.getPlayer().hideBossBar(hudBar);
-    }
+    // ── Tick (every 1 second) ─────────────────────────────────
 
     private void tick() {
-        double tps = Math.min(20.0, Bukkit.getTPS()[0]);
-        int online  = Bukkit.getOnlinePlayers().size();
-        int max     = Bukkit.getMaxPlayers();
-
+        double tps   = Math.min(20.0, Bukkit.getTPS()[0]);
+        int online   = Bukkit.getOnlinePlayers().size();
+        int max      = Bukkit.getMaxPlayers();
         Runtime rt   = Runtime.getRuntime();
         long usedMB  = (rt.totalMemory() - rt.freeMemory()) / 1048576L;
         long maxMB   = rt.maxMemory() / 1048576L;
@@ -74,6 +120,7 @@ public class ReminecraftCore extends JavaPlugin implements Listener {
             barColor = BossBar.Color.RED;
         }
 
+        // Bossbar
         Component title = Component.empty()
             .append(Component.text("TPS: ", NamedTextColor.GRAY))
             .append(Component.text(String.format("%.1f", tps), tpsColor))
@@ -86,22 +133,61 @@ public class ReminecraftCore extends JavaPlugin implements Listener {
         hudBar.progress(Math.max(0.001f, (float)(tps / 20.0)));
         hudBar.color(barColor);
 
+        // Action bar + collect player data
+        int totalPing = 0;
+        StringBuilder players = new StringBuilder("[");
+        boolean first = true;
+
         for (Player p : Bukkit.getOnlinePlayers()) {
             int ping = p.getPing();
+            totalPing += ping;
 
             TextColor pingColor = ping < 80  ? NamedTextColor.GREEN
                                 : ping < 150 ? NamedTextColor.YELLOW
                                              : NamedTextColor.RED;
 
-            Component bar = Component.empty()
+            p.sendActionBar(Component.empty()
                 .append(Component.text("Ping: ", NamedTextColor.GRAY))
                 .append(Component.text(ping + "ms", pingColor))
                 .append(Component.text("  │  TPS: ", NamedTextColor.GRAY))
-                .append(Component.text(String.format("%.1f", tps), tpsColor));
+                .append(Component.text(String.format("%.1f", tps), tpsColor)));
 
-            p.sendActionBar(bar);
+            if (!first) players.append(",");
+            players.append(String.format("{\"name\":\"%s\",\"ping\":%d}",
+                p.getName().replace("\"", "\\\""), ping));
+            first = false;
         }
+
+        players.append("]");
+        int avgPing = online > 0 ? totalPing / online : 0;
+
+        // Send to Bun dashboard
+        sendToBun(String.format(
+            "{\"type\":\"stats\",\"tps\":%.2f,\"online\":%d,\"max_players\":%d," +
+            "\"ram_used_mb\":%d,\"ram_max_mb\":%d,\"avg_ping\":%d,\"players\":%s}",
+            tps, online, max, usedMB, maxMB, avgPing, players
+        ));
     }
+
+    // ── Events ────────────────────────────────────────────────
+
+    @EventHandler
+    public void onServerLoad(ServerLoadEvent event) {
+        if (event.getType() != ServerLoadEvent.LoadType.STARTUP) return;
+        Bukkit.getScheduler().runTaskLater(this, this::printStatus, 20L);
+    }
+
+    @EventHandler
+    public void onJoin(PlayerJoinEvent event) {
+        event.getPlayer().showBossBar(hudBar);
+    }
+
+    @EventHandler
+    public void onQuit(PlayerQuitEvent event) {
+        event.getPlayer().hideBossBar(hudBar);
+    }
+
+    // ── Startup Status ────────────────────────────────────────
 
     private void printStatus() {
         Runtime rt   = Runtime.getRuntime();
@@ -112,7 +198,7 @@ public class ReminecraftCore extends JavaPlugin implements Listener {
         int sim      = Bukkit.getSimulationDistance();
         int maxPl    = Bukkit.getMaxPlayers();
         Plugin[] all = Bukkit.getPluginManager().getPlugins();
-        long active  = java.util.Arrays.stream(all).filter(Plugin::isEnabled).count();
+        long active  = Arrays.stream(all).filter(Plugin::isEnabled).count();
 
         String sep = "==============================================";
         log(sep);
@@ -129,12 +215,12 @@ public class ReminecraftCore extends JavaPlugin implements Listener {
         log("  ──────────────────────────────────────────");
 
         boolean ok = true;
-        if (tps[0] < 19.0) { warn(String.format("TPS rendah: %.2f", tps[0])); ok = false; }
-        if (view > 7)       { warn("View distance " + view + " > 7");           ok = false; }
-        if (sim > 5)        { warn("Sim distance " + sim + " > 5");             ok = false; }
-        if (maxMB - usedMB < 512) { warn("Sisa RAM hanya " + (maxMB-usedMB) + "MB"); ok = false; }
+        if (tps[0] < 19.0)         { warn(String.format("TPS rendah: %.2f", tps[0])); ok = false; }
+        if (view > 7)               { warn("View distance " + view + " > 7");           ok = false; }
+        if (sim > 5)                { warn("Sim distance " + sim + " > 5");             ok = false; }
+        if (maxMB - usedMB < 512)  { warn("Sisa RAM hanya " + (maxMB-usedMB) + "MB"); ok = false; }
 
-        if (ok) log("  Status : ✔ OK");
+        if (ok) log("  Status : OK");
         log(sep);
     }
 
@@ -143,7 +229,10 @@ public class ReminecraftCore extends JavaPlugin implements Listener {
 
     @Override
     public void onDisable() {
+        shuttingDown = true;
         for (Player p : Bukkit.getOnlinePlayers()) p.hideBossBar(hudBar);
+        WebSocket ws = bridge.get();
+        if (ws != null) ws.abort();
         getLogger().info("ReminecraftCore disabled.");
     }
 }
