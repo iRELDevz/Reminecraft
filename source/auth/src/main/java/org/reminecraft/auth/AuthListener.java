@@ -1,5 +1,6 @@
 package org.reminecraft.auth;
 
+import io.papermc.paper.event.player.AsyncChatEvent;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Location;
@@ -7,27 +8,38 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
-import io.papermc.paper.event.player.AsyncChatEvent;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.player.*;
 import org.bukkit.scheduler.BukkitRunnable;
 
+import java.net.InetAddress;
 import java.util.UUID;
 
 class AuthListener implements Listener {
 
     private final ReminecraftAuth plugin;
     private final AuthManager mgr;
+    private final AuthStorage storage;
     private final boolean allowMovement;
-    private final boolean kickOnWrong;
     private final int timeoutSecs;
+    private final String bedrockPrefix;
 
-    AuthListener(ReminecraftAuth plugin, AuthManager mgr) {
-        this.plugin       = plugin;
-        this.mgr          = mgr;
+    AuthListener(ReminecraftAuth plugin, AuthManager mgr, AuthStorage storage) {
+        this.plugin        = plugin;
+        this.mgr           = mgr;
+        this.storage       = storage;
         this.allowMovement = plugin.getConfig().getBoolean("allow-movement", false);
-        this.kickOnWrong  = plugin.getConfig().getBoolean("kick-on-wrong-password", false);
-        this.timeoutSecs  = plugin.getConfig().getInt("login-timeout-seconds", 30);
+        this.timeoutSecs   = plugin.getConfig().getInt("login-timeout-seconds", 30);
+        this.bedrockPrefix = plugin.getConfig().getString("floodgate-prefix", ".");
+    }
+
+    @EventHandler(priority = EventPriority.LOW)
+    void onPreLogin(AsyncPlayerPreLoginEvent e) {
+        UUID uuid = e.getPlayerProfile().getId();
+        if (uuid == null) return;
+        String name = e.getPlayerProfile().getName();
+        if (name != null && name.startsWith(bedrockPrefix)) return;
+        storage.get(uuid);
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
@@ -35,14 +47,13 @@ class AuthListener implements Listener {
         Player p = e.getPlayer();
         UUID uuid = p.getUniqueId();
         String name = p.getName();
-        String ip = p.getAddress() != null ? p.getAddress().getAddress().getHostAddress() : "";
 
-        String prefix = plugin.getConfig().getString("floodgate-prefix", ".");
-        if (name.startsWith(prefix)) {
+        if (name.startsWith(bedrockPrefix)) {
             mgr.markBedrock(uuid);
             return;
         }
 
+        String ip = ip(p);
         mgr.markJoined(uuid);
 
         if (mgr.trySession(uuid, ip)) {
@@ -50,8 +61,7 @@ class AuthListener implements Listener {
             return;
         }
 
-        boolean registered = mgr.isRegistered(uuid);
-        sendAuthPrompt(p, registered);
+        sendAuthPrompt(p, mgr.isRegistered(uuid));
         startTimeoutTask(p);
     }
 
@@ -123,10 +133,14 @@ class AuthListener implements Listener {
         new BukkitRunnable() {
             @Override
             public void run() {
-                if (!p.isOnline()) return;
-                if (mgr.isAuthed(uuid)) return;
+                if (!p.isOnline() || mgr.isAuthed(uuid)) return;
                 p.kick(Component.text("Waktu login habis. Silakan masuk kembali.", NamedTextColor.RED));
             }
         }.runTaskLater(plugin, timeoutSecs * 20L);
+    }
+
+    private static String ip(Player p) {
+        InetAddress a = p.getAddress() != null ? p.getAddress().getAddress() : null;
+        return a != null ? a.getHostAddress() : "";
     }
 }

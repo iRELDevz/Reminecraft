@@ -14,7 +14,7 @@ public class ReminecraftAuth extends JavaPlugin {
         storage = new AuthStorage(getDataFolder());
         mgr     = new AuthManager(storage, getConfig());
 
-        AuthListener listener = new AuthListener(this, mgr);
+        AuthListener listener = new AuthListener(this, mgr, storage);
         getServer().getPluginManager().registerEvents(listener, this);
 
         AuthCommand cmd = new AuthCommand(mgr, storage);

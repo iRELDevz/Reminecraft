@@ -1,0 +1,7 @@
+{
+  "addServer.resourcePack": "Server Resource Pack",
+  "multiplayer.status.connecting": "Connecting to Reminecraft...",
+  "disconnect.loginFailed": "Login failed. Please try again.",
+  "gui.yes": "Yes",
+  "gui.no": "No"
+}
