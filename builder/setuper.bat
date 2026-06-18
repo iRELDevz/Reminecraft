@@ -1,49 +1,112 @@
 @echo off
 title Reminecraft - Setup
-setlocal
+setlocal enabledelayedexpansion
 set "ROOT=%~dp0.."
-set "LOG_INIT=[ReMinecraft^|INIT^|]"
-set "LOG_ERROR=[ReMinecraft^|ERROR^|]"
+set "LOG=[ReMinecraft^|SETUP^|]"
+set "ERR=[ReMinecraft^|ERROR^|]"
 
 echo ====================================================
 echo              REMINE-CRAFT SETUP
 echo ====================================================
 
-call "%ROOT%\_javadetect.bat"
-if %errorlevel% neq 0 ( pause & exit /b 1 )
-echo %LOG_INIT% Java OK: %JAVA_EXE%
-
-if not exist "%ROOT%\runfolder"              mkdir "%ROOT%\runfolder"
-if not exist "%ROOT%\runfolder\plugins"      mkdir "%ROOT%\runfolder\plugins"
-if not exist "%ROOT%\scripts"                mkdir "%ROOT%\scripts"
-echo %LOG_INIT% Folders ready.
-
-if exist "%ROOT%\plugin" (
-    for %%f in ("%ROOT%\plugin\*.jar") do (
-        copy /Y "%%f" "%ROOT%\runfolder\plugins\" >nul
-        echo %LOG_INIT% Plugin: %%~nxf
+REM ── 1. JDK ──────────────────────────────────────────
+if not exist "%ROOT%\jdk-25\bin\java.exe" (
+    echo %LOG% JDK 25 tidak ditemukan. Mengunduh dari Eclipse Adoptium...
+    set "JDK_ZIP=%TEMP%\jdk25.zip"
+    powershell -NoProfile -Command ^
+        "Invoke-WebRequest 'https://api.adoptium.net/v3/binary/latest/25/ga/windows/x64/jdk/hotspot/normal/eclipse' -OutFile '!JDK_ZIP!'"
+    if %errorlevel% neq 0 (
+        echo %ERR% Gagal unduh JDK. Pastikan ada koneksi internet.
+        pause & exit /b 1
     )
+    echo %LOG% Mengekstrak JDK...
+    powershell -NoProfile -Command ^
+        "Expand-Archive -Path '!JDK_ZIP!' -DestinationPath '%ROOT%\jdk-tmp' -Force"
+    for /d %%d in ("%ROOT%\jdk-tmp\jdk-25*") do (
+        move "%%d" "%ROOT%\jdk-25" >nul
+    )
+    rd /s /q "%ROOT%\jdk-tmp" >nul 2>&1
+    del "!JDK_ZIP!" >nul 2>&1
+    echo %LOG% JDK 25 siap.
 ) else (
-    echo %LOG_ERROR% plugin\ folder not found. Pastikan pre-built JARs ada di plugin\.
-    pause & exit /b 1
+    echo %LOG% JDK 25 OK.
 )
 
-if exist "%ROOT%\reminecraft-server.jar" (
-    copy /Y "%ROOT%\reminecraft-server.jar" "%ROOT%\runfolder\" >nul
-    echo %LOG_INIT% Server JAR copied.
-) else if not exist "%ROOT%\runfolder\reminecraft-server.jar" (
-    echo %LOG_ERROR% reminecraft-server.jar tidak ditemukan.
-    echo %LOG_ERROR% Letakkan reminecraft-server.jar di root folder, atau jalankan builder\buildserver.bat dulu.
-    pause & exit /b 1
+REM ── 2. Maven ────────────────────────────────────────
+if not exist "%ROOT%\apache-maven-3.9.16\bin\mvn.cmd" (
+    echo %LOG% Maven tidak ditemukan. Mengunduh...
+    set "MVN_ZIP=%TEMP%\maven.zip"
+    powershell -NoProfile -Command ^
+        "Invoke-WebRequest 'https://downloads.apache.org/maven/maven-3/3.9.16/binaries/apache-maven-3.9.16-bin.zip' -OutFile '!MVN_ZIP!'"
+    if %errorlevel% neq 0 (
+        echo %ERR% Gagal unduh Maven.
+        pause & exit /b 1
+    )
+    echo %LOG% Mengekstrak Maven...
+    powershell -NoProfile -Command ^
+        "Expand-Archive -Path '!MVN_ZIP!' -DestinationPath '%ROOT%' -Force"
+    del "!MVN_ZIP!" >nul 2>&1
+    echo %LOG% Maven siap.
 ) else (
-    echo %LOG_INIT% Server JAR already in runfolder.
+    echo %LOG% Maven OK.
 )
 
-(
-    echo #https://aka.ms/MinecraftEULA
-    echo eula=true
-) > "%ROOT%\runfolder\eula.txt"
+set "JAVA_HOME=%ROOT%\jdk-25"
+set "JAVA_EXE=%ROOT%\jdk-25\bin\java.exe"
+set "MVN=%ROOT%\apache-maven-3.9.16\bin\mvn.cmd"
 
+REM ── 3. Server JAR ───────────────────────────────────
+if not exist "%ROOT%\runfolder\reminecraft-server.jar" (
+    echo %LOG% Server JAR tidak ditemukan. Mengunduh Purpur...
+    if not exist "%ROOT%\runfolder" mkdir "%ROOT%\runfolder"
+    powershell -NoProfile -Command ^
+        "Invoke-WebRequest 'https://api.purpurmc.org/v2/purpur/26.1.2/latest/download' -OutFile '%ROOT%\runfolder\reminecraft-server.jar'"
+    if %errorlevel% neq 0 (
+        echo %ERR% Gagal unduh server JAR dari Purpur.
+        echo %ERR% Download manual dari https://purpurmc.org/downloads
+        echo %ERR% Simpan sebagai: runfolder\reminecraft-server.jar
+        pause & exit /b 1
+    )
+    echo %LOG% Server JAR siap.
+) else (
+    echo %LOG% Server JAR OK.
+)
+
+REM ── 4. Folders ──────────────────────────────────────
+if not exist "%ROOT%\runfolder\plugins" mkdir "%ROOT%\runfolder\plugins"
+if not exist "%ROOT%\scripts"           mkdir "%ROOT%\scripts"
+
+REM ── 5. Copy plugins ─────────────────────────────────
+echo %LOG% Menyalin plugin...
+for %%f in ("%ROOT%\plugin\*.jar") do (
+    copy /Y "%%f" "%ROOT%\runfolder\plugins\" >nul
+    echo %LOG%   %%~nxf
+)
+
+REM ── 6. Build custom plugins ─────────────────────────
+echo %LOG% Build ReminecraftCore...
+cd /d "%ROOT%\core"
+call "%MVN%" package -DskipTests -q
+if %errorlevel% neq 0 ( echo %ERR% Build core gagal. & pause & exit /b 1 )
+for %%f in ("%ROOT%\core\target\reminecraft-core-*.jar") do (
+    copy /Y "%%f" "%ROOT%\plugin\reminecraft-core.jar" >nul
+    copy /Y "%%f" "%ROOT%\runfolder\plugins\reminecraft-core.jar" >nul
+)
+
+echo %LOG% Build ReminecraftPerms...
+cd /d "%ROOT%\source\perms"
+call "%MVN%" package -DskipTests -q
+if %errorlevel% neq 0 ( echo %ERR% Build perms gagal. & pause & exit /b 1 )
+for %%f in ("%ROOT%\source\perms\target\reminecraft-perms-*.jar") do (
+    copy /Y "%%f" "%ROOT%\plugin\reminecraft-perms.jar" >nul
+    copy /Y "%%f" "%ROOT%\runfolder\plugins\reminecraft-perms.jar" >nul
+)
+
+REM ── 7. EULA ─────────────────────────────────────────
+echo #https://aka.ms/MinecraftEULA> "%ROOT%\runfolder\eula.txt"
+echo eula=true>> "%ROOT%\runfolder\eula.txt"
+
+REM ── 8. server.properties ────────────────────────────
 if not exist "%ROOT%\runfolder\server.properties" (
     (
         echo server-ip=0.0.0.0
@@ -64,9 +127,10 @@ if not exist "%ROOT%\runfolder\server.properties" (
         echo enforce-whitelist=false
         echo motd=Reminecraft - Java + Bedrock
     ) > "%ROOT%\runfolder\server.properties"
-    echo %LOG_INIT% server.properties created.
+    echo %LOG% server.properties dibuat.
 )
 
+REM ── 9. config.json ──────────────────────────────────
 if not exist "%ROOT%\config.json" (
     (
         echo {
@@ -76,7 +140,7 @@ if not exist "%ROOT%\config.json" (
         echo     "bedrock-ip": "0.0.0.0",
         echo     "bedrock-port": 19132,
         echo     "max-players": 100,
-        echo     "motd": "§bReminecraft Hybrid Server §7- §aReady"
+        echo     "motd": "§bReminecraft §7- §aHybrid Java + Bedrock"
         echo   },
         echo   "database": {
         echo     "provider": "none",
@@ -92,18 +156,27 @@ if not exist "%ROOT%\config.json" (
         echo     "enable-native-compression": false,
         echo     "enable-bun-scripting": false,
         echo     "bedrock-prefix": "."
-        echo   },
-        echo   "shop": {
-        echo     "enable-shop": true,
-        echo     "shop-items": []
         echo   }
         echo }
     ) > "%ROOT%\config.json"
-    echo %LOG_INIT% config.json created ^(template^).
+    echo %LOG% config.json dibuat.
 )
 
+REM ── 10. Bun (optional) ──────────────────────────────
+where bun >nul 2>&1
+if %errorlevel% equ 0 (
+    echo %LOG% Bun ditemukan, install dependencies...
+    cd /d "%ROOT%\source\bun"
+    call bun install --silent
+    echo %LOG% Bun OK.
+) else (
+    echo %LOG% Bun tidak terinstall ^(opsional^). Scripting engine dinonaktifkan.
+)
+
+cd /d "%ROOT%"
 echo.
 echo ====================================================
-echo %LOG_INIT% Setup selesai. Jalankan localhost.bat atau runner.bat.
+echo %LOG% Setup selesai!
+echo %LOG% Jalankan: localhost.bat
 echo ====================================================
 pause

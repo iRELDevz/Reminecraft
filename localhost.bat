@@ -27,5 +27,5 @@ for %%f in (plugin\*.jar) do (
 
 echo %LOG_JAVA% Starting localhost (4G RAM)...
 cd runfolder
-%JAVA_EXE% -Xms3G -Xmx4G -XX:+UseZGC -Dreminecraft.localhost=true -jar reminecraft-server.jar nogui
+%JAVA_EXE% -Xms512M -Xmx4G -XX:+UseZGC -Dreminecraft.localhost=true -jar reminecraft-server.jar nogui
 cd ..

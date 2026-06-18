@@ -1,0 +1,26 @@
+name: ReminecraftPerms
+version: 1.0.0-SNAPSHOT
+main: org.reminecraft.perms.ReminecraftPerms
+api-version: '1.21'
+description: Custom permission and rank system for Reminecraft
+
+commands:
+  rank:
+    description: Show or manage player ranks
+    usage: /rank [player] | /rank set <player> <group> | /rank create <name> | /rank delete <name> | /rank list | /rank info <group>
+    permission: reminecraftperms.rank
+  setrank:
+    description: Shortcut for /rank set
+    usage: /setrank <player> <group>
+    permission: reminecraftperms.setrank
+
+permissions:
+  reminecraftperms.rank:
+    description: Use /rank commands
+    default: op
+  reminecraftperms.setrank:
+    description: Use /setrank shortcut
+    default: op
+  reminecraftperms.admin:
+    description: Full access to all perm commands
+    default: op

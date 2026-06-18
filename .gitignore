@@ -1,4 +1,4 @@
-﻿# JDK & Maven bundled binaries
+# JDK & Maven (auto-downloaded by setup)
 jdk-25/
 apache-maven-3.9.16/
 
@@ -8,6 +8,7 @@ source/*/target/
 source/*/build/
 source/*/.gradle/
 source/native/build/
+builder/fixauth.*
 
 # Server runtime
 runfolder/cache/
@@ -29,11 +30,13 @@ runfolder/whitelist.json
 runfolder/ops.json
 runfolder/version_history.json
 
-# Plugin JARs (third-party, rebuilt by builder scripts)
-plugin/*.jar
+# Plugin JARs in runfolder (populated by setup.bat from plugin/)
 runfolder/plugins/*.jar
 runfolder/plugins/*/
 !runfolder/plugins/.gitkeep
+
+# Disabled plugins
+*.jar.disabled
 
 # Geyser & Floodgate runtime config
 runfolder/config/geyser/
@@ -55,3 +58,6 @@ testingfolder/
 Thumbs.db
 .DS_Store
 source/java/
+
+# Claude Code internal
+.claude/

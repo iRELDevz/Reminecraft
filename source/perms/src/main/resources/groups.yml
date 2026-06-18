@@ -1,0 +1,45 @@
+groups:
+  default:
+    weight: 0
+    prefix: '§7'
+    permissions:
+      - minecraft.command.me
+      - bukkit.command.help
+      - -authme.player.premium
+      - -authme.player.unpremium
+  member:
+    weight: 10
+    prefix: '§f[Member] '
+    permissions:
+      - minecraft.command.me
+      - bukkit.command.help
+      - reminecraft.member
+      - -authme.player.premium
+      - -authme.player.unpremium
+  vip:
+    weight: 20
+    prefix: '§6[VIP] '
+    permissions:
+      - minecraft.command.me
+      - bukkit.command.help
+      - reminecraft.member
+      - reminecraft.vip
+      - -authme.player.premium
+      - -authme.player.unpremium
+  mod:
+    weight: 50
+    prefix: '§b[Mod] '
+    permissions:
+      - minecraft.command.me
+      - bukkit.command.help
+      - reminecraft.member
+      - reminecraft.vip
+      - reminecraft.mod
+      - bukkit.command.kick
+      - -authme.player.premium
+      - -authme.player.unpremium
+  admin:
+    weight: 100
+    prefix: '§c[Admin] '
+    permissions:
+      - '*'
