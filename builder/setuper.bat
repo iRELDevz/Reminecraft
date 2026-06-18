@@ -76,20 +76,12 @@ REM ── 4. Folders ───────────────────�
 if not exist "%ROOT%\runfolder\plugins" mkdir "%ROOT%\runfolder\plugins"
 if not exist "%ROOT%\scripts"           mkdir "%ROOT%\scripts"
 
-REM ── 5. Copy plugins ─────────────────────────────────
-echo %LOG% Menyalin plugin...
-for %%f in ("%ROOT%\plugin\*.jar") do (
-    copy /Y "%%f" "%ROOT%\runfolder\plugins\" >nul
-    echo %LOG%   %%~nxf
-)
-
-REM ── 6. Build custom plugins ─────────────────────────
+REM ── 5. Build custom plugins ─────────────────────────
 echo %LOG% Build ReminecraftCore...
 cd /d "%ROOT%\core"
 call "%MVN%" package -DskipTests -q
 if %errorlevel% neq 0 ( echo %ERR% Build core gagal. & pause & exit /b 1 )
 for %%f in ("%ROOT%\core\target\reminecraft-core-*.jar") do (
-    copy /Y "%%f" "%ROOT%\plugin\reminecraft-core.jar" >nul
     copy /Y "%%f" "%ROOT%\runfolder\plugins\reminecraft-core.jar" >nul
 )
 
@@ -98,7 +90,6 @@ cd /d "%ROOT%\source\perms"
 call "%MVN%" package -DskipTests -q
 if %errorlevel% neq 0 ( echo %ERR% Build perms gagal. & pause & exit /b 1 )
 for %%f in ("%ROOT%\source\perms\target\reminecraft-perms-*.jar") do (
-    copy /Y "%%f" "%ROOT%\plugin\reminecraft-perms.jar" >nul
     copy /Y "%%f" "%ROOT%\runfolder\plugins\reminecraft-perms.jar" >nul
 )
 
