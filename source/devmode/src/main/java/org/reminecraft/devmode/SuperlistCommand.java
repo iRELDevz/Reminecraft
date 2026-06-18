@@ -21,8 +21,11 @@ import java.util.UUID;
 class SuperlistCommand implements CommandExecutor {
 
     private static final int PAGE_SIZE = 8;
+    private static final long CACHE_TTL = 30_000;
 
     private final SuperlistManager mgr;
+    private List<KnownPlayer> knownCache = List.of();
+    private long knownCacheTime = 0;
 
     SuperlistCommand(SuperlistManager mgr) {
         this.mgr = mgr;
@@ -119,6 +122,9 @@ class SuperlistCommand implements CommandExecutor {
     }
 
     private List<KnownPlayer> loadKnown() {
+        long now = System.currentTimeMillis();
+        if (now - knownCacheTime < CACHE_TTL) return knownCache;
+
         File f = new File("usercache.json");
         if (!f.exists()) return List.of();
         try {
@@ -136,9 +142,11 @@ class SuperlistCommand implements CommandExecutor {
                 if (am != bm) return am ? -1 : 1;
                 return a.name().compareToIgnoreCase(b.name());
             });
-            return list;
+            knownCache = List.copyOf(list);
+            knownCacheTime = now;
+            return knownCache;
         } catch (Exception e) {
-            return List.of();
+            return knownCache;
         }
     }
 

@@ -9,6 +9,7 @@ import org.bukkit.event.Listener;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 class ChatFilter implements Listener {
@@ -43,12 +44,16 @@ class ChatFilter implements Listener {
 
         String text = PlainTextComponentSerializer.plainText().serialize(e.message());
         boolean matched = false;
+        boolean cancel = "cancel".equals(action);
 
         for (Pattern p : snap) {
-            if (!p.matcher(text).find()) continue;
-            if ("cancel".equals(action)) { e.setCancelled(true); return; }
-            text = p.matcher(text).replaceAll(replacement);
-            matched = true;
+            Matcher m = p.matcher(text);
+            if (cancel) {
+                if (m.find()) { e.setCancelled(true); return; }
+            } else {
+                String replaced = m.replaceAll(replacement);
+                if (!replaced.equals(text)) { text = replaced; matched = true; }
+            }
         }
 
         if (matched) e.message(Component.text(text));

@@ -11,22 +11,28 @@ import java.util.List;
 class MotdListener implements Listener {
 
     private final ReminecraftDevmode plugin;
+    private volatile boolean enabled;
+    private volatile List<String> lines;
 
     MotdListener(ReminecraftDevmode plugin) {
         this.plugin = plugin;
+        reload();
+    }
+
+    void reload() {
+        var cfg = plugin.getConfig();
+        enabled = cfg.getBoolean("motd.enabled", true);
+        lines   = List.copyOf(cfg.getStringList("motd.lines"));
     }
 
     @EventHandler(priority = EventPriority.NORMAL)
     void onPing(ServerListPingEvent e) {
-        if (!plugin.getConfig().getBoolean("motd.enabled", true)) return;
+        if (!enabled || lines.isEmpty()) return;
 
         double tps = Math.min(20.0, plugin.getServer().getTPS()[0]);
         String tpsStr = String.format("%.1f", tps);
         int online = plugin.getServer().getOnlinePlayers().size();
         int max    = plugin.getServer().getMaxPlayers();
-
-        List<String> lines = plugin.getConfig().getStringList("motd.lines");
-        if (lines.isEmpty()) return;
 
         String first  = apply(lines.get(0), tpsStr, online, max);
         String second = lines.size() > 1 ? apply(lines.get(1), tpsStr, online, max) : "";

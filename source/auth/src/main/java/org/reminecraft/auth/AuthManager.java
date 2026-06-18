@@ -4,6 +4,7 @@ import org.bukkit.configuration.file.FileConfiguration;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.HexFormat;
 import java.util.Map;
@@ -14,6 +15,11 @@ import java.util.concurrent.ConcurrentHashMap;
 class AuthManager {
 
     private static final SecureRandom RNG = new SecureRandom();
+    private static final HexFormat HEX = HexFormat.of();
+    private static final ThreadLocal<MessageDigest> DIGEST = ThreadLocal.withInitial(() -> {
+        try { return MessageDigest.getInstance("SHA-256"); }
+        catch (NoSuchAlgorithmException e) { throw new RuntimeException(e); }
+    });
 
     private final AuthStorage storage;
     private final long sessionMs;
@@ -23,18 +29,15 @@ class AuthManager {
 
     private final Set<UUID> authed   = ConcurrentHashMap.newKeySet();
     private final Set<UUID> bedrock  = ConcurrentHashMap.newKeySet();
-    private final Map<UUID, Long>    joinedAt = new ConcurrentHashMap<>();
     private final Map<UUID, Integer> attempts = new ConcurrentHashMap<>();
 
     AuthManager(AuthStorage storage, FileConfiguration cfg) {
-        this.storage    = storage;
-        this.sessionMs  = cfg.getLong("session-hours", 12) * 3_600_000L;
-        this.minLen     = cfg.getInt("min-password-length", 5);
-        this.maxLen     = cfg.getInt("max-password-length", 32);
+        this.storage     = storage;
+        this.sessionMs   = cfg.getLong("session-hours", 12) * 3_600_000L;
+        this.minLen      = cfg.getInt("min-password-length", 5);
+        this.maxLen      = cfg.getInt("max-password-length", 32);
         this.maxAttempts = cfg.getInt("max-attempts", 5);
     }
-
-    void markJoined(UUID uuid) { joinedAt.put(uuid, System.currentTimeMillis()); }
 
     boolean trySession(UUID uuid, String ip) {
         AuthStorage.PlayerData d = storage.get(uuid);
@@ -82,19 +85,17 @@ class AuthManager {
     void cleanup(UUID uuid) {
         authed.remove(uuid);
         bedrock.remove(uuid);
-        joinedAt.remove(uuid);
         attempts.remove(uuid);
         storage.evict(uuid);
     }
 
-    boolean isAuthed(UUID uuid)      { return authed.contains(uuid); }
-    boolean isBedrock(UUID uuid)     { return bedrock.contains(uuid); }
-    boolean isRegistered(UUID uuid)  { return storage.exists(uuid); }
-    int     attempts(UUID uuid)      { return attempts.getOrDefault(uuid, 0); }
-    int     maxAttempts()            { return maxAttempts; }
-    int     minLen()                 { return minLen; }
-    int     maxLen()                 { return maxLen; }
-    long    joinedAt(UUID uuid)      { return joinedAt.getOrDefault(uuid, 0L); }
+    boolean isAuthed(UUID uuid)     { return authed.contains(uuid); }
+    boolean isBedrock(UUID uuid)    { return bedrock.contains(uuid); }
+    boolean isRegistered(UUID uuid) { return storage.exists(uuid); }
+    int     attempts(UUID uuid)     { return attempts.getOrDefault(uuid, 0); }
+    int     maxAttempts()           { return maxAttempts; }
+    int     minLen()                { return minLen; }
+    int     maxLen()                { return maxLen; }
 
     void unregister(UUID uuid) {
         authed.remove(uuid);
@@ -110,21 +111,22 @@ class AuthManager {
     private static String salt() {
         byte[] b = new byte[16];
         RNG.nextBytes(b);
-        return HexFormat.of().formatHex(b);
+        return HEX.formatHex(b);
     }
 
     private static String hash(String pass, String salt) {
-        try {
-            MessageDigest md = MessageDigest.getInstance("SHA-256");
-            md.update((salt + pass).getBytes(StandardCharsets.UTF_8));
-            return HexFormat.of().formatHex(md.digest());
-        } catch (Exception e) { throw new RuntimeException(e); }
+        MessageDigest md = DIGEST.get();
+        md.reset();
+        md.update(salt.getBytes(StandardCharsets.UTF_8));
+        md.update(pass.getBytes(StandardCharsets.UTF_8));
+        return HEX.formatHex(md.digest());
     }
 
-    private static boolean verify(String pass, String salt, String stored) {
-        return MessageDigest.isEqual(
-            hash(pass, salt).getBytes(StandardCharsets.UTF_8),
-            stored.getBytes(StandardCharsets.UTF_8)
-        );
+    private static boolean verify(String pass, String salt, String storedHex) {
+        MessageDigest md = DIGEST.get();
+        md.reset();
+        md.update(salt.getBytes(StandardCharsets.UTF_8));
+        md.update(pass.getBytes(StandardCharsets.UTF_8));
+        return MessageDigest.isEqual(md.digest(), HEX.parseHex(storedHex));
     }
 }

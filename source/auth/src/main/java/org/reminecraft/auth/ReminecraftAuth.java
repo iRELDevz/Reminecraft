@@ -23,7 +23,7 @@ public class ReminecraftAuth extends JavaPlugin {
             if (c != null) c.setExecutor(cmd);
         }
 
-        getLogger().info("ReminecraftAuth activo.");
+        getLogger().info("ReminecraftAuth enabled.");
     }
 
     @Override

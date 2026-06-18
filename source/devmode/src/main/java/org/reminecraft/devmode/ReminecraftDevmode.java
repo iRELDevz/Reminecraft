@@ -9,6 +9,7 @@ public class ReminecraftDevmode extends JavaPlugin {
     private ChatFilter chatFilter;
     private RateLimiter rateLimiter;
     private GroupMessages groupMessages;
+    private MotdListener motdListener;
     private SuperlistManager superlist;
 
     @Override
@@ -19,6 +20,7 @@ public class ReminecraftDevmode extends JavaPlugin {
         chatFilter    = new ChatFilter(this);
         rateLimiter   = new RateLimiter(this);
         groupMessages = new GroupMessages(this);
+        motdListener  = new MotdListener(this);
         superlist     = new SuperlistManager(this);
 
         PluginManager pm = getServer().getPluginManager();
@@ -26,7 +28,7 @@ public class ReminecraftDevmode extends JavaPlugin {
         if (getConfig().getBoolean("chat-filter.enabled"))    pm.registerEvents(chatFilter, this);
         if (getConfig().getBoolean("rate-limiter.enabled"))   pm.registerEvents(rateLimiter, this);
         if (getConfig().getBoolean("group-messages.enabled")) pm.registerEvents(groupMessages, this);
-        pm.registerEvents(new MotdListener(this), this);
+        pm.registerEvents(motdListener, this);
 
         var devCmd = getCommand("devmode");
         if (devCmd != null) devCmd.setExecutor(new DevmodeCommand(this, antiBot, chatFilter, rateLimiter, groupMessages));
@@ -48,6 +50,7 @@ public class ReminecraftDevmode extends JavaPlugin {
         chatFilter.reload();
         rateLimiter.reload();
         groupMessages.reload();
+        motdListener.reload();
         superlist.load();
     }
 }

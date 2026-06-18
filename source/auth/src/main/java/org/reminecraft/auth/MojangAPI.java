@@ -1,5 +1,8 @@
 package org.reminecraft.auth;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -34,12 +37,18 @@ class MojangAPI {
 
         return HTTP.sendAsync(req, HttpResponse.BodyHandlers.ofString())
             .thenApply(r -> {
-                if (r.statusCode() != 200) { cache.put(key, new CachedResult(null, System.currentTimeMillis())); return null; }
-                int i = r.body().indexOf("\"id\":\"");
-                if (i < 0) return null;
-                UUID uuid = dashless(r.body().substring(i + 6, i + 38));
-                cache.put(key, new CachedResult(uuid, System.currentTimeMillis()));
-                return uuid;
+                if (r.statusCode() != 200) {
+                    cache.put(key, new CachedResult(null, System.currentTimeMillis()));
+                    return null;
+                }
+                try {
+                    JsonObject obj = JsonParser.parseString(r.body()).getAsJsonObject();
+                    UUID uuid = dashless(obj.get("id").getAsString());
+                    cache.put(key, new CachedResult(uuid, System.currentTimeMillis()));
+                    return uuid;
+                } catch (Exception e) {
+                    return null;
+                }
             })
             .exceptionally(e -> null);
     }

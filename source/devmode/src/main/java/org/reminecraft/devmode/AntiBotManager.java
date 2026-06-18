@@ -8,7 +8,6 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerLoginEvent;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -48,7 +47,7 @@ class AntiBotManager implements Listener {
         }
 
         long now = System.currentTimeMillis();
-        List<Long> times = joinTimes.computeIfAbsent(ip, k -> Collections.synchronizedList(new ArrayList<>()));
+        List<Long> times = joinTimes.computeIfAbsent(ip, k -> new ArrayList<>());
 
         synchronized (times) {
             times.removeIf(t -> now - t > windowMs);
@@ -56,8 +55,8 @@ class AntiBotManager implements Listener {
 
             if (times.size() >= maxJoins) {
                 banned.add(ip);
-                long banTicks = banMs / 50;
-                plugin.getServer().getScheduler().runTaskLaterAsynchronously(plugin, () -> banned.remove(ip), banTicks);
+                plugin.getServer().getScheduler().runTaskLaterAsynchronously(
+                    plugin, () -> banned.remove(ip), banMs / 50);
                 e.disallow(PlayerLoginEvent.Result.KICK_OTHER,
                     Component.text("Flood terdeteksi. Coba lagi dalam " + (banMs / 1000) + " detik.", NamedTextColor.RED));
             }

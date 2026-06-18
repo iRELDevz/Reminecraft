@@ -10,7 +10,6 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityPickupItemEvent;
 import org.bukkit.event.player.*;
-import org.bukkit.scheduler.BukkitRunnable;
 
 import java.net.InetAddress;
 import java.util.UUID;
@@ -54,7 +53,6 @@ class AuthListener implements Listener {
         }
 
         String ip = ip(p);
-        mgr.markJoined(uuid);
 
         if (mgr.trySession(uuid, ip)) {
             p.sendMessage(Component.text("Selamat datang kembali, " + name + "!", NamedTextColor.GREEN));
@@ -130,17 +128,15 @@ class AuthListener implements Listener {
 
     private void startTimeoutTask(Player p) {
         UUID uuid = p.getUniqueId();
-        new BukkitRunnable() {
-            @Override
-            public void run() {
-                if (!p.isOnline() || mgr.isAuthed(uuid)) return;
-                p.kick(Component.text("Waktu login habis. Silakan masuk kembali.", NamedTextColor.RED));
-            }
-        }.runTaskLater(plugin, timeoutSecs * 20L);
+        plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+            if (!p.isOnline() || mgr.isAuthed(uuid)) return;
+            p.kick(Component.text("Waktu login habis. Silakan masuk kembali.", NamedTextColor.RED));
+        }, timeoutSecs * 20L);
     }
 
     private static String ip(Player p) {
-        InetAddress a = p.getAddress() != null ? p.getAddress().getAddress() : null;
+        if (p.getAddress() == null) return "";
+        InetAddress a = p.getAddress().getAddress();
         return a != null ? a.getHostAddress() : "";
     }
 }

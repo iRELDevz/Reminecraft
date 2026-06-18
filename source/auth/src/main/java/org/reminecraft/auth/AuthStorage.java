@@ -4,6 +4,7 @@ import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -13,7 +14,8 @@ class AuthStorage {
     record PlayerData(String name, String hash, String salt, long registered, long lastLogin, String lastIp) {}
 
     private final File dir;
-    private final ConcurrentHashMap<UUID, PlayerData> mem = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<UUID, PlayerData> mem    = new ConcurrentHashMap<>();
+    private final Set<UUID>                           absent = ConcurrentHashMap.newKeySet();
 
     AuthStorage(File pluginDir) {
         dir = new File(pluginDir, "data");
@@ -21,7 +23,17 @@ class AuthStorage {
     }
 
     PlayerData get(UUID uuid) {
-        return mem.computeIfAbsent(uuid, this::read);
+        PlayerData cached = mem.get(uuid);
+        if (cached != null) return cached;
+        if (absent.contains(uuid)) return null;
+
+        PlayerData loaded = read(uuid);
+        if (loaded == null) {
+            absent.add(uuid);
+            return null;
+        }
+        PlayerData existing = mem.putIfAbsent(uuid, loaded);
+        return existing != null ? existing : loaded;
     }
 
     boolean exists(UUID uuid) {
@@ -29,6 +41,7 @@ class AuthStorage {
     }
 
     void put(UUID uuid, PlayerData data) {
+        absent.remove(uuid);
         mem.put(uuid, data);
         CompletableFuture.runAsync(() -> write(uuid, data));
     }
@@ -45,6 +58,7 @@ class AuthStorage {
 
     void remove(UUID uuid) {
         mem.remove(uuid);
+        absent.add(uuid);
         CompletableFuture.runAsync(() -> file(uuid).delete());
     }
 
@@ -70,7 +84,10 @@ class AuthStorage {
         y.set("registered", d.registered());
         y.set("lastLogin",  d.lastLogin());
         y.set("ip",         d.lastIp());
-        try { y.save(file(uuid)); } catch (IOException ignored) {}
+        try { y.save(file(uuid)); }
+        catch (IOException e) {
+            System.err.println("[ReminecraftAuth] Failed to save player data for " + uuid + ": " + e.getMessage());
+        }
     }
 
     private File file(UUID uuid) { return new File(dir, uuid + ".yml"); }
