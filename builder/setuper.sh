@@ -12,11 +12,17 @@ JDK_DIR="$ROOT/jdk-25"
 MVN_DIR="$ROOT/apache-maven-3.9.16"
 MVN="$MVN_DIR/bin/mvn"
 
+case "$(uname -m)" in
+    x86_64|amd64)   JDK_ARCH="x64" ;;
+    aarch64|arm64)  JDK_ARCH="aarch64" ;;
+    *)              JDK_ARCH="x64" ;;
+esac
+
 # ── 1. JDK ──────────────────────────────────────────────
 if [ ! -x "$JDK_DIR/bin/java" ]; then
     echo "$LOG JDK 25 tidak ditemukan. Mengunduh dari Eclipse Adoptium..."
     JDK_TAR="$(mktemp /tmp/jdk25.XXXXXX.tar.gz)"
-    curl -fsSL "https://api.adoptium.net/v3/binary/latest/25/ga/linux/x64/jdk/hotspot/normal/eclipse" -o "$JDK_TAR"
+    curl -fsSL "https://api.adoptium.net/v3/binary/latest/25/ga/linux/$JDK_ARCH/jdk/hotspot/normal/eclipse" -o "$JDK_TAR"
     mkdir -p "$ROOT/jdk-tmp"
     tar -xzf "$JDK_TAR" -C "$ROOT/jdk-tmp"
     mv "$ROOT/jdk-tmp"/jdk-25* "$JDK_DIR"
