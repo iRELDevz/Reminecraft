@@ -1,0 +1,17 @@
+name: ReminecraftGPU
+version: 1.0.0-SNAPSHOT
+main: org.reminecraft.gpu.ReminecraftGPU
+api-version: '1.21'
+load: STARTUP
+description: GPU compute engine - terrain generation, collision dan pathfinding offload ke GPU via OpenCL
+
+commands:
+  gpu:
+    description: Status, device, benchmark dan mode compute engine
+    usage: /gpu <status|devices|bench|mode>
+    permission: reminecraftgpu.admin
+
+permissions:
+  reminecraftgpu.admin:
+    description: Akses penuh ke kontrol GPU engine
+    default: op

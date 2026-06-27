@@ -109,6 +109,14 @@ for %%f in ("%ROOT%\source\devmode\target\reminecraft-devmode-*.jar") do (
     copy /Y "%%f" "%ROOT%\runfolder\plugins\reminecraft-devmode.jar" >nul
 )
 
+echo %LOG% Build ReminecraftGPU...
+cd /d "%ROOT%\source\gpu"
+call "%MVN%" package -DskipTests -q
+if %errorlevel% neq 0 ( echo %ERR% Build gpu gagal. & pause & exit /b 1 )
+for %%f in ("%ROOT%\source\gpu\target\reminecraft-gpu-*.jar") do (
+    copy /Y "%%f" "%ROOT%\runfolder\plugins\reminecraft-gpu.jar" >nul
+)
+
 REM ── 7. EULA ─────────────────────────────────────────
 echo #https://aka.ms/MinecraftEULA> "%ROOT%\runfolder\eula.txt"
 echo eula=true>> "%ROOT%\runfolder\eula.txt"

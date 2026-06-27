@@ -62,7 +62,7 @@ build() {
     cd "$srcdir"
     "$MVN" package -DskipTests -q
     local jar
-    jar=$(find "$srcdir/target" -name "*.jar" ! -name "*-sources.jar" | head -1)
+    jar=$(find "$srcdir/target" -maxdepth 1 -name "*.jar" ! -name "*-sources.jar" ! -name "original-*.jar" | head -1)
     cp -f "$jar" "$ROOT/runfolder/plugins/$outjar"
     echo "$LOG $name -> plugins/$outjar"
 }
@@ -71,6 +71,7 @@ build "ReminecraftCore"    "$ROOT/core"             "reminecraft-core.jar"
 build "ReminecraftPerms"   "$ROOT/source/perms"     "reminecraft-perms.jar"
 build "ReminecraftAuth"    "$ROOT/source/auth"      "reminecraft-auth.jar"
 build "ReminecraftDevmode" "$ROOT/source/devmode"   "reminecraft-devmode.jar"
+build "ReminecraftGPU"     "$ROOT/source/gpu"       "reminecraft-gpu.jar"
 
 # ── 6. EULA ──────────────────────────────────────────────
 printf "#https://aka.ms/MinecraftEULA\neula=true\n" > "$ROOT/runfolder/eula.txt"

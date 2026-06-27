@@ -1,0 +1,30 @@
+compute-mode: auto
+
+device:
+  platform-index: -1
+  device-index: -1
+  prefer: gpu
+
+terrain:
+  enabled: false
+  world: gpu_world
+  seed: 0
+  sea-level: 63
+  base-height: 64
+  height-amplitude: 48
+  octaves: 5
+  frequency: 0.0065
+  lacunarity: 2.0
+  persistence: 0.5
+  region-chunks: 8
+  cache-regions: 64
+
+offload:
+  collision: true
+  pathfinding: true
+
+benchmark:
+  noise-samples: 1048576
+  collision-boxes: 8192
+  pathfinding-grid: 256
+  verify-tolerance: 0.002
