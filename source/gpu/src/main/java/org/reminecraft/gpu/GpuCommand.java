@@ -147,7 +147,7 @@ public final class GpuCommand implements CommandExecutor, TabCompleter {
 
     private void mode(CommandSender sender, String[] args) {
         if (args.length < 2) {
-            sender.sendMessage(Component.text("Usage: /gpu mode <cpu|gpu|auto>", NamedTextColor.RED));
+            sender.sendMessage(Component.text("Usage: /gpu mode <cpu|gpu|remote>", NamedTextColor.RED));
             return;
         }
         ComputeMode mode = ComputeMode.parse(args[1]);
@@ -178,7 +178,7 @@ public final class GpuCommand implements CommandExecutor, TabCompleter {
                     .toList();
         }
         if (args.length == 2 && args[0].equalsIgnoreCase("mode")) {
-            return Stream.of("cpu", "gpu", "auto")
+            return Stream.of("cpu", "gpu", "remote")
                     .filter(s -> s.startsWith(args[1].toLowerCase(Locale.ROOT)))
                     .toList();
         }

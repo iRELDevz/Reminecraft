@@ -24,7 +24,7 @@ public final class ReminecraftGPU extends JavaPlugin {
     @Override
     public void onEnable() {
         saveDefaultConfig();
-        configuredMode     = ComputeMode.parse(getConfig().getString("compute-mode", "auto"));
+        configuredMode     = ComputeMode.parse(getConfig().getString("compute-mode", "gpu"));
         offloadCollision   = getConfig().getBoolean("offload.collision", true);
         offloadPathfinding = getConfig().getBoolean("offload.pathfinding", true);
 
@@ -108,11 +108,7 @@ public final class ReminecraftGPU extends JavaPlugin {
         } catch (Throwable t) {
             gpu = null;
             String reason = t.getMessage() != null ? t.getMessage() : t.getClass().getSimpleName();
-            if (configuredMode == ComputeMode.GPU) {
-                getLogger().warning("compute-mode=gpu tapi GPU gagal init, fallback ke CPU: " + reason);
-            } else {
-                getLogger().info("GPU tidak tersedia, pakai CPU: " + reason);
-            }
+            getLogger().info("GPU tidak tersedia, fallback ke CPU: " + reason);
         }
     }
 

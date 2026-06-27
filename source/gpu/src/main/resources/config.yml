@@ -1,4 +1,8 @@
-compute-mode: auto
+# compute-mode: cpu | gpu | remote
+#   cpu    = semua di CPU, GPU dilewati
+#   gpu    = GPU lokal di mesin server (auto-fallback ke CPU kalau GPU/OpenCL tidak ada)
+#   remote = terrain noise dikirim ke GPU daemon di mesin lain (collision/pathfinding tetap lokal)
+compute-mode: gpu
 
 device:
   platform-index: -1
