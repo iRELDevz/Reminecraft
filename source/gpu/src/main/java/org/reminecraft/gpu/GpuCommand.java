@@ -53,6 +53,22 @@ public final class GpuCommand implements CommandExecutor, TabCompleter {
                 ? "aktif -> world '" + plugin.terrainWorld() + "'" : "nonaktif");
         field(sender, "Offload collision", plugin.offloadCollision() ? "on" : "off");
         field(sender, "Offload pathfinding", plugin.offloadPathfinding() ? "on" : "off");
+
+        NmsBridge bridge = plugin.nmsBridge();
+        field(sender, "NMS bridge", bridge != null && bridge.available() ? "tersedia" : "tidak tersedia",
+                bridge != null && bridge.available() ? NamedTextColor.GREEN : NamedTextColor.GRAY);
+
+        EntityBroadPhaseService service = plugin.broadPhaseService();
+        if (service != null) {
+            EntityBroadPhaseService.Stats st = service.stats();
+            field(sender, "Broad-phase live", st.entities() + " entitas, " + st.pathfinding()
+                    + " pathfinding, " + st.pairs() + " pair, "
+                    + String.format(Locale.ROOT, "%.2f ms", st.lastMillis())
+                    + " /" + st.intervalTicks() + "t",
+                    NamedTextColor.AQUA);
+        } else {
+            field(sender, "Broad-phase live", "nonaktif (butuh GPU + offload.collision)", NamedTextColor.GRAY);
+        }
     }
 
     private void devices(CommandSender sender) {

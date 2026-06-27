@@ -22,6 +22,8 @@ terrain:
 offload:
   collision: true
   pathfinding: true
+  broadphase-interval-ticks: 40
+  max-entities: 4096
 
 benchmark:
   noise-samples: 1048576

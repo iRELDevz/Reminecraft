@@ -12,6 +12,8 @@ public final class ReminecraftGPU extends JavaPlugin {
     private ComputeEngine active;
     private Benchmark benchmark;
     private GpuChunkGenerator terrainGenerator;
+    private NmsBridge nms;
+    private EntityBroadPhaseService broadPhase;
 
     private boolean terrainEnabled;
     private String terrainWorld;
@@ -46,6 +48,16 @@ public final class ReminecraftGPU extends JavaPlugin {
 
         getLogger().info("ReminecraftGPU enabled. Backend: " + active.backend());
 
+        nms = NmsBridge.probe(getLogger());
+        if (offloadCollision && gpu != null) {
+            broadPhase = new EntityBroadPhaseService(this, active, nms,
+                    getConfig().getInt("offload.broadphase-interval-ticks", 40),
+                    getConfig().getInt("offload.max-entities", 4096));
+            broadPhase.start();
+            getLogger().info("Entity broad-phase GPU offload aktif (interval "
+                    + getConfig().getInt("offload.broadphase-interval-ticks", 40) + " tick).");
+        }
+
         terrainEnabled = getConfig().getBoolean("terrain.enabled", false);
         terrainWorld   = getConfig().getString("terrain.world", "gpu_world");
         if (terrainEnabled) createTerrainWorld();
@@ -53,6 +65,7 @@ public final class ReminecraftGPU extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (broadPhase != null) broadPhase.stop();
         if (gpu != null) {
             try { gpu.close(); } catch (Throwable ignored) {}
         }
@@ -123,4 +136,6 @@ public final class ReminecraftGPU extends JavaPlugin {
     public String terrainWorld()          { return terrainWorld; }
     public boolean offloadCollision()     { return offloadCollision; }
     public boolean offloadPathfinding()   { return offloadPathfinding; }
+    public NmsBridge nmsBridge()          { return nms; }
+    public EntityBroadPhaseService broadPhaseService() { return broadPhase; }
 }
