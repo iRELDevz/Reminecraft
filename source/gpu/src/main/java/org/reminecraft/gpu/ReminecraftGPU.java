@@ -9,6 +9,7 @@ public final class ReminecraftGPU extends JavaPlugin {
     private ComputeMode configuredMode;
     private CpuComputeEngine cpu;
     private GpuComputeEngine gpu;
+    private RemoteComputeEngine remote;
     private ComputeEngine active;
     private Benchmark benchmark;
     private GpuChunkGenerator terrainGenerator;
@@ -29,7 +30,7 @@ public final class ReminecraftGPU extends JavaPlugin {
 
         cpu = new CpuComputeEngine();
         initEngine();
-        active = gpu != null ? gpu : cpu;
+        active = remote != null ? remote : (gpu != null ? gpu : cpu);
 
         benchmark = new Benchmark(
                 getConfig().getInt("benchmark.noise-samples", 1048576),
@@ -73,6 +74,10 @@ public final class ReminecraftGPU extends JavaPlugin {
         getLogger().info("ReminecraftGPU disabled.");
     }
 
+    public RemoteComputeEngine remoteEngine() {
+        return remote;
+    }
+
     @Override
     public ChunkGenerator getDefaultWorldGenerator(String worldName, String id) {
         return terrainGenerator;
@@ -81,6 +86,17 @@ public final class ReminecraftGPU extends JavaPlugin {
     private void initEngine() {
         if (configuredMode == ComputeMode.CPU) {
             getLogger().info("compute-mode=cpu, GPU dilewati.");
+            return;
+        }
+        if (configuredMode == ComputeMode.REMOTE) {
+            remote = new RemoteComputeEngine(
+                    getConfig().getString("remote.host", "127.0.0.1"),
+                    getConfig().getInt("remote.port", 25599),
+                    getConfig().getInt("remote.timeout-ms", 4000),
+                    getConfig().getLong("remote.reconnect-cooldown-ms", 30000),
+                    cpu,
+                    getLogger());
+            remote.probe();
             return;
         }
         boolean preferGpu = !"cpu".equalsIgnoreCase(getConfig().getString("device.prefer", "gpu"));

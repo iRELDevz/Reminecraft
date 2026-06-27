@@ -43,8 +43,12 @@ public final class GpuCommand implements CommandExecutor, TabCompleter {
                 active.accelerated() ? NamedTextColor.GREEN : NamedTextColor.YELLOW);
 
         GpuComputeEngine gpu = plugin.gpuEngine();
+        RemoteComputeEngine remote = plugin.remoteEngine();
         if (gpu != null) {
             field(sender, "GPU device", gpu.device().describe());
+        } else if (remote != null) {
+            field(sender, "GPU device", "remote daemon (lihat backend aktif)",
+                    remote.accelerated() ? NamedTextColor.GREEN : NamedTextColor.YELLOW);
         } else {
             field(sender, "GPU device", "tidak terdeteksi / OpenCL tidak tersedia", NamedTextColor.GRAY);
         }

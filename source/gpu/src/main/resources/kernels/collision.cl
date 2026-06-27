@@ -12,7 +12,7 @@ __kernel void broadphase(
     float aMaxY = boxes[i * 6 + 4];
     float aMaxZ = boxes[i * 6 + 5];
 
-    int local = 0;
+    int overlaps = 0;
     for (int j = i + 1; j < count; j++) {
         float bMinX = boxes[j * 6 + 0];
         float bMinY = boxes[j * 6 + 1];
@@ -24,7 +24,7 @@ __kernel void broadphase(
         bool hit = aMinX <= bMaxX && aMaxX >= bMinX
                 && aMinY <= bMaxY && aMaxY >= bMinY
                 && aMinZ <= bMaxZ && aMaxZ >= bMinZ;
-        if (hit) local++;
+        if (hit) overlaps++;
     }
-    if (local > 0) atomic_add(outCount, local);
+    if (overlaps > 0) atomic_add(outCount, overlaps);
 }

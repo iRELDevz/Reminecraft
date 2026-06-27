@@ -5,6 +5,12 @@ device:
   device-index: -1
   prefer: gpu
 
+remote:
+  host: 127.0.0.1
+  port: 25599
+  timeout-ms: 4000
+  reconnect-cooldown-ms: 30000
+
 terrain:
   enabled: false
   world: gpu_world
