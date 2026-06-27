@@ -4,6 +4,8 @@
 
 **Hybrid Java + Bedrock Minecraft Server**
 
+![Version](https://img.shields.io/badge/version-1.1.0-success) ![Java + Bedrock](https://img.shields.io/badge/Java%20%2B%20Bedrock-Purpur%201.21-blue) ![GPU](https://img.shields.io/badge/GPU-OpenCL-orange)
+
 [![English](#-english) · [Indonesia](#-indonesia) · [日本語](#-日本語)](#)
 
 </div>

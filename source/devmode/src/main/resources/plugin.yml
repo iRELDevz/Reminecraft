@@ -1,5 +1,5 @@
 name: ReminecraftDevmode
-version: 1.0.0-SNAPSHOT
+version: 1.1.0
 main: org.reminecraft.devmode.ReminecraftDevmode
 api-version: '1.21'
 description: Anti-bot, MOTD, chat filter, rate limiter, group messages, plugin manager
