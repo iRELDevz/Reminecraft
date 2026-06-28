@@ -4,7 +4,7 @@
 
 **Hybrid Java + Bedrock Minecraft Server**
 
-![Version](https://img.shields.io/badge/version-1.1.0-success) ![Java + Bedrock](https://img.shields.io/badge/Java%20%2B%20Bedrock-Purpur%201.21-blue) ![GPU](https://img.shields.io/badge/GPU-OpenCL-orange)
+![Version](https://img.shields.io/badge/version-1.2.0-success) ![Java + Bedrock](https://img.shields.io/badge/Java%20%2B%20Bedrock-Purpur%201.21-blue) ![GPU](https://img.shields.io/badge/GPU-OpenCL-orange)
 
 [![English](#-english) · [Indonesia](#-indonesia) · [日本語](#-日本語)](#)
 
@@ -53,6 +53,7 @@ Only needed if you modify source code:
 | `builder\buildcore.bat` | ReminecraftCore (HUD, status check) |
 | `builder\buildperms.bat` | ReminecraftPerms (permission/rank system) |
 | `builder\buildplugin.bat` | AuthMe / FastLogin / Geyser / Floodgate from source |
+| `builder\buildvia.bat` | ViaVersion + ViaBackwards + ViaRewind (multi-version support) |
 | `builder\buildserver.bat` | Purpur server JAR from source (takes 10–40 min) |
 
 ### Bundled Plugins
@@ -60,7 +61,10 @@ Only needed if you modify source code:
 | Plugin | Purpose |
 |--------|---------|
 | Geyser | Bedrock ↔ Java bridge |
-| Floodgate | Auth for Bedrock players |
+| Floodgate | Auth for Bedrock players (Geyser `auth-type: floodgate`) |
+| ViaVersion | Lets **newer** Java clients connect |
+| ViaBackwards | Lets **older** Java clients connect (down to 1.8) |
+| ViaRewind | Adds 1.7.x client support |
 | AuthMe | Login/register for offline-mode servers |
 | FastLogin | Auto-login for premium Java players |
 | ProtocolLib | Packet-level library used by other plugins |
@@ -136,6 +140,7 @@ Hanya perlu jika mengubah source code:
 | `builder\buildcore.bat` | ReminecraftCore (HUD, status check) |
 | `builder\buildperms.bat` | ReminecraftPerms (sistem permission/rank) |
 | `builder\buildplugin.bat` | AuthMe / FastLogin / Geyser / Floodgate dari source |
+| `builder\buildvia.bat` | ViaVersion + ViaBackwards + ViaRewind (dukungan semua versi) |
 | `builder\buildserver.bat` | Purpur server JAR dari source (10–40 menit) |
 
 ### Plugin Bawaan
@@ -143,7 +148,10 @@ Hanya perlu jika mengubah source code:
 | Plugin | Fungsi |
 |--------|--------|
 | Geyser | Bridge Bedrock ↔ Java |
-| Floodgate | Auth untuk pemain Bedrock |
+| Floodgate | Auth untuk pemain Bedrock (Geyser `auth-type: floodgate`) |
+| ViaVersion | Agar klien Java versi **lebih baru** bisa masuk |
+| ViaBackwards | Agar klien Java versi **lebih lama** bisa masuk (s/d 1.8) |
+| ViaRewind | Tambahan dukungan klien 1.7.x |
 | AuthMe | Sistem login/register untuk server offline |
 | FastLogin | Auto-login untuk pemain Java premium |
 | ProtocolLib | Library packet untuk plugin lain |
